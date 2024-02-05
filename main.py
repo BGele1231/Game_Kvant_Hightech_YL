@@ -58,16 +58,19 @@ class Tools(Sprite):
         super().__init__(tools_group)
         self.image = pygame.transform.scale(image, size)
         # в действии или нет
-        self.rect = self.image.get_rect()
+        self.rect = pygame.Rect((*pos, *size))
+        self.size = size
         self.busy = False
         self.time = time
         self.materials = material
         self.product = product
-        # self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image)
         self.x = pos[0]
         self.y = pos[1]
         self.state = True
         self.add(borders)
+        self.k = pygame.Surface(size)
+        self.k.fill((255, 255, 255))
 
     def making(self):
         self.busy = True
@@ -82,43 +85,32 @@ class Tools(Sprite):
 
 tools_group = SpriteGroup()
 borders = pygame.sprite.Group()
-test = Tools(load_image('test.jpg'), (100, 70), (100, 100), 2, ['PLA'], ['3D stuff'])
+test = Tools(load_image('contrast_flsan.png'), (200, 170), (100, 100), 2, ['PLA'], ['3D stuff'])
 staffs = [test]
 
 
 class Player(Sprite):
-    def __init__(self, pos):
+    def __init__(self, pos, size):
         super().__init__(hero_group)
-        self.image = player_image
+        self.image = pygame.transform.scale(player_image, size)
         # в действии или нет
         self.busy = False
         self.rect = self.image.get_rect()
-        # self.mask = pygame.mask.from_surface(self.image)
-        self.pos_x = pos[0]
-        self.pos_y = pos[1]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.x = pos[0]
+        self.y = pos[1]
         # self.rect.x = pos[0]
         # self.rect.y = pos[1]
-        self.stop = False
-        self.last_movement = ''
 
     def move(self, x, y):
-        print(bool(pygame.sprite.spritecollideany(self, borders)), hero.last_movement, self.pos_x, self.pos_x, x, y)
-        if not pygame.sprite.spritecollideany(self, borders):
-            self.pos_x = x
-            self.pos_y = y
-            self.rect = self.image.get_rect().move(x, y)
-            self.stop = False
-        else:
-
-            if (hero.last_movement == 'up' and self.pos_y < y) or (hero.last_movement == 'down' and self.pos_y > y):
-                self.pos_x = x
-                self.pos_y = y
-            if ((hero.last_movement == 'left' and self.pos_x < x) or
-                    (hero.last_movement == 'right' and self.pos_x > x)):
-                self.pos_x = x
-                self.pos_y = y
-            self.rect = self.image.get_rect().move(x, y)
-            self.stop = True
+        #  self.rect.colliderect(i.rect) pygame.sprite.collide_mask(self, test)
+        for i in staffs:
+            # print(x, y, self.rect.size[0], self.rect.size[1], i.x, i.y, i.size[0], i.size[1])
+            if ((x > (i.x + i.size[0]) or i.x > (x + self.rect.size[0])) or
+                    (y > (i.x + i.size[1]) or i.y > (y + self.rect.size[1]))):
+                self.x = x
+                self.y = y
+                self.rect = self.image.get_rect().move(x, y)
 
 
 player = None
@@ -162,7 +154,8 @@ def start_screen():
         clock.tick(FPS)
 
 
-def up_dowm_left_right(movement, n, x, y):
+def up_dowm_left_right(movement, n):
+    x, y = hero.x, hero.y
     if movement == "up":
         hero.move(x, y - n)
     elif movement == "down":
@@ -171,15 +164,21 @@ def up_dowm_left_right(movement, n, x, y):
         hero.move(x - n, y)
     elif movement == "right":
         hero.move(x + n, y)
-    hero.last_movement = movement
+    elif movement == "up_left":
+        hero.move(x - n, y - n)
+    elif movement == "up_right":
+        hero.move(x + n, y - n)
+    elif movement == "down_left":
+        hero.move(x - n, y + n)
+    elif movement == "down_right":
+        hero.move(x + n, y + n)
 
 
 def move(hero, movement, shift):
-    x, y = hero.pos_x, hero.pos_y
     if shift:
-        up_dowm_left_right(movement, 4, x, y)
+        up_dowm_left_right(movement, 5)
     else:
-        up_dowm_left_right(movement, 3, x, y)
+        up_dowm_left_right(movement, 3)
 
 
 def placements(tool):
@@ -187,7 +186,7 @@ def placements(tool):
         tool.x, tool.y)
 
 
-hero = Player((0, 0))
+hero = Player((0, 0), (51, 61))
 start_screen()
 for j in staffs:
     placements(j)
@@ -201,9 +200,19 @@ while running:
     else:
         shift = False
     if keys[pygame.K_w]:
-        move(hero, "up", shift)
+        if keys[pygame.K_a]:
+            move(hero, "up_left", shift)
+        elif keys[pygame.K_d]:
+            move(hero, "up_right", shift)
+        else:
+            move(hero, "up", shift)
     elif keys[pygame.K_s]:
-        move(hero, "down", shift)
+        if keys[pygame.K_a]:
+            move(hero, "down_left", shift)
+        elif keys[pygame.K_d]:
+            move(hero, "down_right", shift)
+        else:
+            move(hero, "down", shift)
     elif keys[pygame.K_a]:
         move(hero, "left", shift)
     elif keys[pygame.K_d]:
