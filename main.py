@@ -54,7 +54,7 @@ class Sprite(pygame.sprite.Sprite):
 
 
 class Tools(Sprite):
-    def __init__(self, image, size, pos, time, material, product):
+    def __init__(self, image, size, pos, time, material, product, redundant_height):
         super().__init__(tools_group)
         self.image = pygame.transform.scale(image, size)
         # в действии или нет
@@ -71,6 +71,7 @@ class Tools(Sprite):
         self.add(borders)
         self.k = pygame.Surface(size)
         self.k.fill((255, 255, 255))
+        self.redundant_height = redundant_height
 
     def making(self):
         self.busy = True
@@ -85,7 +86,7 @@ class Tools(Sprite):
 
 tools_group = SpriteGroup()
 borders = pygame.sprite.Group()
-test = Tools(load_image('contrast_flsan.png'), (200, 170), (100, 100), 2, ['PLA'], ['3D stuff'])
+test = Tools(load_image('contrast_flsan.png'), (200, 170), (100, 100), 2, ['PLA'], ['3D stuff'], 55)
 staffs = [test]
 
 
@@ -103,11 +104,10 @@ class Player(Sprite):
         # self.rect.y = pos[1]
 
     def move(self, x, y):
-        #  self.rect.colliderect(i.rect) pygame.sprite.collide_mask(self, test)
         for i in staffs:
             # print(x, y, self.rect.size[0], self.rect.size[1], i.x, i.y, i.size[0], i.size[1])
             if ((x > (i.x + i.size[0]) or i.x > (x + self.rect.size[0])) or
-                    (y > (i.x + i.size[1]) or i.y > (y + self.rect.size[1]))):
+                    (y > (i.x + i.size[1]) or (i.y + i.redundant_height) > (y + self.rect.size[1]))):
                 self.x = x
                 self.y = y
                 self.rect = self.image.get_rect().move(x, y)
