@@ -1,3 +1,5 @@
+import io
+
 import pygame
 import os
 import sys
@@ -22,19 +24,17 @@ pygame.init()
 screen_size = (1400, 800)
 screen = pygame.display.set_mode(screen_size)
 FPS = 50
-
-player_image = load_image('mar.png')
+OVERLAP = 30  # на сколько пикселей герой может перекрывать другие спрайты
+ACCESS_ZONE = 25  # отступ для зоны доступа инструментов
 
 
 class ScreenFrame(pygame.sprite.Sprite):
-
     def __init__(self):
         super().__init__()
         self.rect = (0, 0, 500, 500)
 
 
 class SpriteGroup(pygame.sprite.Group):
-
     def __init__(self):
         super().__init__()
 
@@ -44,7 +44,6 @@ class SpriteGroup(pygame.sprite.Group):
 
 
 class Sprite(pygame.sprite.Sprite):
-
     def __init__(self, group):
         super().__init__(group)
         self.rect = None
@@ -54,39 +53,49 @@ class Sprite(pygame.sprite.Sprite):
 
 
 class Tools(Sprite):
-    def __init__(self, image, size, pos, time, material, product, redundant_height):
+    def __init__(self, image, dedicated_image, size, pos, time, material, product, redundant_height):
         super().__init__(tools_group)
         self.image = pygame.transform.scale(image, size)
+        self.first_image = pygame.transform.scale(image, size)
+        self.second_image = pygame.transform.scale(dedicated_image, size)
         # в действии или нет
         self.rect = pygame.Rect((*pos, *size))
         self.size = size
-        self.busy = False
+        self.busy = False  # занят изготовлением или нет
         self.time = time
         self.materials = material
         self.product = product
-        self.mask = pygame.mask.from_surface(self.image)
+        # self.mask = pygame.mask.from_surface(self.image)
         self.x = pos[0]
         self.y = pos[1]
-        self.state = True
-        self.add(borders)
-        self.k = pygame.Surface(size)
-        self.k.fill((255, 255, 255))
+        self.access = False  # персонаж в зоне доступа инструмента или нет
+        self.state = True  # сломан или нет
+        # self.add(borders)
         self.redundant_height = redundant_height
+        self.access_rect = pygame.Rect((self.x - ACCESS_ZONE, self.y - ACCESS_ZONE,
+                                       size[0] + ACCESS_ZONE * 2, size[1] + ACCESS_ZONE * 2))
 
     def making(self):
-        self.busy = True
-        # отсчёт времени до self.time
+        if self.access:
+            self.busy = True
+            # отсчёт времени до self.time
+            return True
+        else:
+            return False
 
 
     def fixing(self, time):
-        hero.busy = True
-        # отсчёт времени до локального time
-        self.state = True
+        if self.access:
+            hero.busy = True
+            # отсчёт времени до локального time
+            self.state = True
 
 
+sprite_group = SpriteGroup()
 tools_group = SpriteGroup()
-borders = pygame.sprite.Group()
-test = Tools(load_image('contrast_flsan.png'), (200, 170), (100, 100), 2, ['PLA'], ['3D stuff'], 55)
+# borders = pygame.sprite.Group()
+test = Tools(load_image('flsun.png'), load_image('flsun_dedicated.png'), (200, 170),
+             (350, 630), 2, ['PLA'], ['3D stuff'], 55)
 staffs = [test]
 
 
@@ -102,22 +111,42 @@ class Player(Sprite):
         self.y = pos[1]
         # self.rect.x = pos[0]
         # self.rect.y = pos[1]
+        self.top_bottom = True
 
     def move(self, x, y):
+        access_tools = []
         for i in staffs:
             # print(x, y, self.rect.size[0], self.rect.size[1], i.x, i.y, i.size[0], i.size[1])
             if ((x > (i.x + i.size[0]) or i.x > (x + self.rect.size[0])) or
-                    (y > (i.x + i.size[1]) or (i.y + i.redundant_height) > (y + self.rect.size[1]))):
+                    (y > (i.y + i.size[1] - OVERLAP))):
+                hero.top_bottom = False
                 self.x = x
                 self.y = y
                 self.rect = self.image.get_rect().move(x, y)
+            elif ((x > (i.x + i.size[0]) or i.x > (x + self.rect.size[0])) or
+                    ((i.y + i.redundant_height) > (y + self.rect.size[1]))):
+                hero.top_bottom = True
+                self.x = x
+                self.y = y
+                self.rect = self.image.get_rect().move(x, y)
+            middle_x = (x + self.rect.size[0]) // 2
+            middle_y = (y + self.rect.size[1]) // 2
+
+            if i.access_rect.colliderect(self.rect):
+                access_tools.append(i)
+                i.access = True
+                i.image = i.second_image
+                print('near')
+            else:
+                i.image = i.first_image
+                print('far')
+                i.access = False
 
 
-player = None
-running = True
-clock = pygame.time.Clock()
-sprite_group = SpriteGroup()
+access_tools = []
+player_image = load_image('mar.png')
 hero_group = SpriteGroup()
+hero = Player((0, 0), (51, 71))
 
 
 def terminate():
@@ -127,8 +156,7 @@ def terminate():
 
 def start_screen():
     intro_text = ["     Kvant HighTech", "",
-                  "     Герой двигается",
-                  "     Карта на месте"]
+                  "     Использовать английскую раскладку"]
 
     fon = pygame.transform.scale(load_image('Sprite-floor.png'), screen_size)
     screen.blit(fon, (0, 0))
@@ -154,7 +182,7 @@ def start_screen():
         clock.tick(FPS)
 
 
-def up_dowm_left_right(movement, n):
+def up_down_left_right(movement, n):
     x, y = hero.x, hero.y
     if movement == "up":
         hero.move(x, y - n)
@@ -176,20 +204,22 @@ def up_dowm_left_right(movement, n):
 
 def move(hero, movement, shift):
     if shift:
-        up_dowm_left_right(movement, 5)
+        up_down_left_right(movement, 5)
     else:
-        up_dowm_left_right(movement, 3)
+        up_down_left_right(movement, 3)
 
 
-def placements(tool):
-    tool.rect = tool.image.get_rect().move(
-        tool.x, tool.y)
+def choosing_tools():
+    for j in access_tools:
+        if j.maiking():
+            break
 
 
-hero = Player((0, 0), (51, 61))
+clock = pygame.time.Clock()
 start_screen()
-for j in staffs:
-    placements(j)
+running = True
+
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -217,12 +247,19 @@ while running:
         move(hero, "left", shift)
     elif keys[pygame.K_d]:
         move(hero, "right", shift)
+    if keys[pygame.K_f]:
+        choosing_tools()
 
     screen.fill(pygame.Color("black"))
     screen.blit(pygame.transform.scale(load_image('Sprite-floor.png'), screen_size), (0, 0))
-    sprite_group.draw(screen)
-    hero_group.draw(screen)
-    tools_group.draw(screen)
+    if hero.top_bottom:
+        hero_group.draw(screen)
+        tools_group.draw(screen)
+    else:
+        tools_group.draw(screen)
+        hero_group.draw(screen)
+    # sprite_group.draw(screen)
+    # pygame.draw.rect(screen, (255, 255, 255), test.access_rect)
     clock.tick(FPS)
     pygame.display.flip()
 pygame.quit()
