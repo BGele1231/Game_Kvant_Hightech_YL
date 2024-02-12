@@ -23,7 +23,7 @@ def Options():
     while True:
         OPTIONS_MOUSE_POS = pygame.mouse.get_pos()
         SCREEN.fill("black")
-        OPTIONS_TEXT = get_font(45).render("This is the OPTIONS screen.", True, "Black")
+        OPTIONS_TEXT = get_font(45).render("This is the OPTIONS screen.", True, "White")
         OPTIONS_RECT = OPTIONS_TEXT.get_rect(center=(640, 460))
         SCREEN.blit(OPTIONS_TEXT, OPTIONS_RECT)
         OPTIONS_BACK = Button()
