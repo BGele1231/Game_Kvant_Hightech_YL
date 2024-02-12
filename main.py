@@ -1,5 +1,3 @@
-import io
-
 import pygame
 import os
 import sys
@@ -21,7 +19,7 @@ def load_image(name, color_key=None):
 
 
 pygame.init()
-screen_size = (1400, 800)
+screen_size = (1500, 900)
 screen = pygame.display.set_mode(screen_size)
 FPS = 50
 OVERLAP = 30  # на сколько пикселей герой может перекрывать другие спрайты
@@ -53,7 +51,7 @@ class Sprite(pygame.sprite.Sprite):
 
 
 class Tools(Sprite):
-    def __init__(self, image, dedicated_image, size, pos, time, material, product, redundant_height):
+    def __init__(self, image, dedicated_image, size, pos, time, recipes, redundant_height=0):
         super().__init__(tools_group)
         self.image = pygame.transform.scale(image, size)
         self.first_image = pygame.transform.scale(image, size)
@@ -63,8 +61,7 @@ class Tools(Sprite):
         self.size = size
         self.busy = False  # занят изготовлением или нет
         self.time = time
-        self.materials = material
-        self.product = product
+        self.recipes = recipes  # словарь, ключ - продукт, значение - материал
         # self.mask = pygame.mask.from_surface(self.image)
         self.x = pos[0]
         self.y = pos[1]
@@ -76,13 +73,20 @@ class Tools(Sprite):
                                        size[0] + ACCESS_ZONE * 2, size[1] + ACCESS_ZONE * 2))
 
     def making(self):
-        if self.access:
+        if self.access and not self.busy:
             self.busy = True
-            # отсчёт времени до self.time
-            return True
+            if hero.active_inventory in self.recipes:
+                product = self.recipes[hero.active_inventory]
+                # отсчёт времени до self.time
+                print('Making')
+                if hero.inventory1 == '':
+                    hero.inventory1 = product
+                elif hero.inventory2 == '':
+                    hero.inventory2 = product
+                return True
+            return ''  # доделать ВЫВОД НА ЭКРАН, что нет свободного места
         else:
             return False
-
 
     def fixing(self, time):
         if self.access:
@@ -94,9 +98,17 @@ class Tools(Sprite):
 sprite_group = SpriteGroup()
 tools_group = SpriteGroup()
 # borders = pygame.sprite.Group()
-test = Tools(load_image('flsun.png'), load_image('flsun_dedicated.png'), (200, 170),
-             (350, 630), 2, ['PLA'], ['3D stuff'], 55)
-staffs = [test]
+flsun = Tools(load_image('flsun.png'), load_image('flsun_dedicated.png'), (200, 170),
+             (350, 630), 2, {'PLA': '3D stuff'}, 55)
+staffs = [flsun]
+
+
+class Storage(Tools):
+    def __init__(self, image, dedicated_image, size, pos, products, redundant_height=0):
+        materials = dict()
+        for k in products:
+            materials[k] = ''
+        super().__init__(image, dedicated_image, size, pos, 0, materials, redundant_height)
 
 
 class Player(Sprite):
@@ -111,20 +123,26 @@ class Player(Sprite):
         self.y = pos[1]
         # self.rect.x = pos[0]
         # self.rect.y = pos[1]
-        self.top_bottom = True
+        self.inventory1 = ''
+        self.inventory2 = ''
+        self.active_inventory = True  # True - inventory1, False - inventory2
+        self.top_bottom = False
 
     def move(self, x, y):
+        global access_tools
         access_tools = []
         for i in staffs:
             # print(x, y, self.rect.size[0], self.rect.size[1], i.x, i.y, i.size[0], i.size[1])
-            if ((x > (i.x + i.size[0]) or i.x > (x + self.rect.size[0])) or
-                    (y > (i.y + i.size[1] - OVERLAP))):
+            if (((x > i.x + i.size[0] or i.x > x + self.rect.size[0]) or
+                    (y > i.y + i.size[1] - OVERLAP)) and
+                    0 <= x <= screen_size[0] - self.rect.size[0] and 0 <= y <= screen_size[1] - self.rect.size[1]):
                 hero.top_bottom = False
                 self.x = x
                 self.y = y
                 self.rect = self.image.get_rect().move(x, y)
-            elif ((x > (i.x + i.size[0]) or i.x > (x + self.rect.size[0])) or
-                    ((i.y + i.redundant_height) > (y + self.rect.size[1]))):
+            elif (((x > i.x + i.size[0] or i.x > x + self.rect.size[0]) or
+                    (i.y + i.redundant_height > y + self.rect.size[1])) and
+                  0 <= x <= screen_size[0] - self.rect.size[0] and 0 <= y <= screen_size[1] - self.rect.size[1]):
                 hero.top_bottom = True
                 self.x = x
                 self.y = y
@@ -136,22 +154,26 @@ class Player(Sprite):
                 access_tools.append(i)
                 i.access = True
                 i.image = i.second_image
-                print('near')
             else:
                 i.image = i.first_image
-                print('far')
                 i.access = False
 
 
 access_tools = []
-player_image = load_image('mar.png')
+player_image = load_image('character_front.png')
+player_image_lateral = load_image('character_lateral.png')
+player_image_back = load_image('character_back.png')
+player_size = (120, 150)
 hero_group = SpriteGroup()
-hero = Player((0, 0), (51, 71))
+hero = Player((0, 0), player_size)
 
 
 def terminate():
     pygame.quit()
     sys.exit
+
+
+
 
 
 def start_screen():
@@ -182,24 +204,35 @@ def start_screen():
         clock.tick(FPS)
 
 
+
+
+
 def up_down_left_right(movement, n):
     x, y = hero.x, hero.y
     if movement == "up":
         hero.move(x, y - n)
+        hero.image = pygame.transform.scale(player_image_back, player_size)
     elif movement == "down":
         hero.move(x, y + n)
+        hero.image = pygame.transform.scale(player_image, player_size)
     elif movement == "left":
         hero.move(x - n, y)
+        hero.image = pygame.transform.flip(pygame.transform.scale(player_image_lateral, player_size), True, False)
     elif movement == "right":
         hero.move(x + n, y)
+        hero.image = pygame.transform.scale(player_image_lateral, player_size)
     elif movement == "up_left":
         hero.move(x - n, y - n)
+        hero.image = pygame.transform.flip(pygame.transform.scale(player_image_lateral, player_size), True, False)
     elif movement == "up_right":
         hero.move(x + n, y - n)
+        hero.image = pygame.transform.scale(player_image_lateral, player_size)
     elif movement == "down_left":
         hero.move(x - n, y + n)
+        hero.image = pygame.transform.flip(pygame.transform.scale(player_image_lateral, player_size), True, False)
     elif movement == "down_right":
         hero.move(x + n, y + n)
+        hero.image = pygame.transform.scale(player_image_lateral, player_size)
 
 
 def move(hero, movement, shift):
@@ -210,9 +243,11 @@ def move(hero, movement, shift):
 
 
 def choosing_tools():
+    print(access_tools)
     for j in access_tools:
-        if j.maiking():
+        if j.making():
             break
+        print('check')
 
 
 clock = pygame.time.Clock()
