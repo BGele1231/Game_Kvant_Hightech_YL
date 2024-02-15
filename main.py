@@ -18,13 +18,10 @@ def load_image(name, color_key=None):
     return image
 
 
-pygame.init()
-screen_size = (1500, 900)
-screen = pygame.display.set_mode(screen_size)
 FPS = 50
 OVERLAP = 60  # на сколько пикселей герой может перекрывать другие спрайты
-ACCESS_ZONE = 3  # отступ для зоны доступа инструментов
-
+ACCESS_ZONE = 10  # отступ для зоны доступа инструментов
+PLAYER_CONST = 7  # отступ внутрь прямоугольника для пересечений access_rect
 
 
 class ScreenFrame(pygame.sprite.Sprite):
@@ -52,7 +49,7 @@ class Sprite(pygame.sprite.Sprite):
 
 
 class Tools(Sprite):
-    def __init__(self, image, dedicated_image, size, pos, time, recipes, redundant_height=0):
+    def __init__(self, image, dedicated_image, size, pos, time, recipes, access_sides, redundant_height=0):
         super().__init__(tools_group)
         self.image = pygame.transform.scale(image, size)
         self.first_image = pygame.transform.scale(image, size)  # обычное изображение
@@ -67,8 +64,27 @@ class Tools(Sprite):
         self.access = False  # персонаж в зоне доступа инструмента или нет
         self.state = True  # сломан или нет
         self.redundant_height = redundant_height
-        self.access_rect = pygame.Rect((self.x - ACCESS_ZONE - redundant_height, self.y - ACCESS_ZONE,
-                                       size[0] + ACCESS_ZONE * 2, size[1] + ACCESS_ZONE * 2))
+
+        x_ac, y_ac, x_ac_size, y_ac_size = self.x, self.y + redundant_height, size[0], size[1] - OVERLAP
+        if 'top' in access_sides:
+            y_ac = self.y - ACCESS_ZONE + redundant_height
+            if 'bottom' in access_sides:
+                y_ac_size = size[1] + ACCESS_ZONE * 2 - OVERLAP
+            else:
+                y_ac_size = size[1] + ACCESS_ZONE - OVERLAP
+        else:
+            if 'bottom' in access_sides:
+                y_ac_size = size[1] + ACCESS_ZONE - OVERLAP
+        if 'left' in access_sides:
+            x_ac = self.x - ACCESS_ZONE
+            if 'right' in access_sides:
+                x_ac_size = size[0] + ACCESS_ZONE * 2
+            else:
+                x_ac_size = size[0] + ACCESS_ZONE
+        else:
+            if 'bottom' in access_sides:
+                x_ac_size = size[0] + ACCESS_ZONE
+        self.access_rect = pygame.Rect(x_ac, y_ac, x_ac_size, y_ac_size)
 
     def making(self):
         if not self.state:
@@ -98,9 +114,8 @@ class Tools(Sprite):
 
 
 class Storage(Tools):
-    def __init__(self, image, dedicated_image, size, pos, product, redundant_height=0):
-        super().__init__(image, dedicated_image, size, pos, 0, {'': product}, redundant_height)
-        print(self.recipes)
+    def __init__(self, image, dedicated_image, size, pos, product, access_sides, redundant_height=0):
+        super().__init__(image, dedicated_image, size, pos, 0, {'': product}, access_sides, redundant_height)
 
     def making(self):
         # где-то тут выбор точного материала
@@ -115,29 +130,11 @@ class Storage(Tools):
         return "I can't take more/I am shorthanded"  # доделать ВЫВОД НА ЭКРАН, что нет свободного места
 
 
-sprite_group = SpriteGroup()
-tools_group = SpriteGroup()
-test_storage = Storage(load_image('test.jpg'), load_image('contrast_flsan.png'), (200, 170),
-              (300, 730), 'PLA', 55)
-flsun = Tools(load_image('flsun.png'), load_image('flsun_dedicated.png'), (200, 170),
-              (600, 730), 2, {'PLA': '3D stuff'}, 55)
-workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (400, 300),
-                  (400, 300), 1, {'smth': 'good_smth'}, 50)
-middle_coordinates = (workbench.y + workbench.size[1]) // 2
-staffs = [workbench, flsun, test_storage]
-workbench_group = SpriteGroup()
-workbench_group.add(workbench)
-bottom_tools = SpriteGroup()
-bottom_tools.add(flsun)
-bottom_tools.add(test_storage)
-top_tools = SpriteGroup()
-side_tools = SpriteGroup()
-
-
 class Player(Sprite):
     def __init__(self, pos, size):
         super().__init__(hero_group)
         self.image = pygame.transform.scale(player_image, size)
+        self.size = size
         self.busy = False  # в действии или нет
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
@@ -147,6 +144,8 @@ class Player(Sprite):
         self.inventory2 = ''
         self.active_inventory = True  # True - inventory1, False - inventory2
         # self.top_bottom = False
+        self.access_rect = pygame.Rect(self.x + PLAYER_CONST, self.y + PLAYER_CONST,
+                                      size[0] - PLAYER_CONST, size[1] - PLAYER_CONST)
 
     def move(self, x, y):
         global access_tools
@@ -156,7 +155,8 @@ class Player(Sprite):
             # print(x, y, self.rect.size[0], self.rect.size[1], i.x, i.y, i.size[0], i.size[1])
             if (((x > i.x + i.size[0] or i.x > x + self.rect.size[0]) or
                  ((y > i.y + i.size[1] - OVERLAP) or (i.y + i.redundant_height > y + self.rect.size[1]))) and
-                    0 <= x <= screen_size[0] - self.rect.size[0] and 0 <= y <= screen_size[1] - self.rect.size[1]):
+                    0 <= x <= screen_size[0] - self.rect.size[0] and
+                    0 <= y <= screen_size[1] - self.rect.size[1]):
                 # hero.top_bottom = False
                 flag = True
             else:
@@ -166,29 +166,17 @@ class Player(Sprite):
             self.x = x
             self.y = y
             self.rect = self.image.get_rect().move(x, y)
+            self.access_rect = pygame.Rect((x + PLAYER_CONST, y + PLAYER_CONST),
+                                           (self.size[0] - PLAYER_CONST, self.size[1] - PLAYER_CONST))
 
         for i in staffs:
-            if i.access_rect.colliderect(self.rect):
+            if i.access_rect.colliderect(self.access_rect):
                 access_tools.append(i)
                 i.access = True
                 i.image = i.second_image
             else:
                 i.image = i.first_image
                 i.access = False
-
-
-access_tools = []
-player_image = load_image('character_front.png')
-player_image_lateral = load_image('character_lateral.png')
-player_image_back = load_image('character_back.png')
-player_size = (100, 130)
-hero_group = SpriteGroup()
-hero = Player((0, 0), player_size)
-
-
-def terminate():
-    pygame.quit()
-    sys.exit
 
 
 
@@ -261,6 +249,7 @@ def move(hero, movement, shift):
 
 
 def choosing_tools():
+    print(access_tools)
     # for j in access_tools:
     k = access_tools[0].making()
     if k:
@@ -268,67 +257,103 @@ def choosing_tools():
         # доделать ВЫВОД НА ЭКРАН, k будет сообщением
 
 
-clock = pygame.time.Clock()
-start_screen()
-running = True
+def terminate():
+    pygame.quit()
+    sys.exit
 
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.MOUSEWHEEL:
-            hero.active_inventory = not hero.active_inventory
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-        shift = True
-    else:
-        shift = False
-    if keys[pygame.K_w]:
-        if keys[pygame.K_a]:
-            move(hero, "up_left", shift)
-        elif keys[pygame.K_d]:
-            move(hero, "up_right", shift)
+if __name__ == "__main__":
+    pygame.init()
+    screen_size = (1500, 900)
+    screen = pygame.display.set_mode(screen_size)
+
+    sprite_group = SpriteGroup()
+    tools_group = SpriteGroup()
+    test_storage = Storage(load_image('test.jpg'), load_image('contrast_flsan.png'), (200, 170),
+                           (300, 730), 'PLA', 'top', 55)
+    flsun = Tools(load_image('flsun.png'), load_image('flsun_dedicated.png'), (200, 170),
+                  (590, 730), 2, {'PLA': '3D stuff'}, 'top', 55)
+    workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (400, 300),
+                      (400, 300), 1, {'smth': 'good_smth'}, 'top bottom left right', 50)
+    middle_coordinates = (workbench.y + workbench.size[1]) // 2
+    staffs = [workbench, flsun, test_storage]
+    workbench_group = SpriteGroup()
+    workbench_group.add(workbench)
+    bottom_tools = SpriteGroup()
+    bottom_tools.add(flsun)
+    bottom_tools.add(test_storage)
+    top_tools = SpriteGroup()
+    side_tools = SpriteGroup()
+
+    access_tools = []
+    player_image = load_image('character_front.png')
+    player_image_lateral = load_image('character_lateral.png')
+    player_image_back = load_image('character_back.png')
+    player_size = (100, 130)
+    hero_group = SpriteGroup()
+    hero = Player((0, 0), player_size)
+
+    clock = pygame.time.Clock()
+    start_screen()
+    running = True
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEWHEEL:
+                hero.active_inventory = not hero.active_inventory
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+            shift = True
         else:
-            move(hero, "up", shift)
-    elif keys[pygame.K_s]:
-        if keys[pygame.K_a]:
-            move(hero, "down_left", shift)
+            shift = False
+        if keys[pygame.K_w]:
+            if keys[pygame.K_a]:
+                move(hero, "up_left", shift)
+            elif keys[pygame.K_d]:
+                move(hero, "up_right", shift)
+            else:
+                move(hero, "up", shift)
+        elif keys[pygame.K_s]:
+            if keys[pygame.K_a]:
+                move(hero, "down_left", shift)
+            elif keys[pygame.K_d]:
+                move(hero, "down_right", shift)
+            else:
+                move(hero, "down", shift)
+        elif keys[pygame.K_a]:
+            move(hero, "left", shift)
         elif keys[pygame.K_d]:
-            move(hero, "down_right", shift)
+            move(hero, "right", shift)
+        if keys[pygame.K_f]:
+            choosing_tools()
+        if keys[pygame.K_1]:
+            hero.active_inventory = True
+        elif keys[pygame.K_2]:
+            hero.active_inventory = False
+
+        if keys[pygame.K_TAB]:
+            print(hero.inventory1, hero.inventory2)
+
+        screen.fill(pygame.Color("black"))
+        screen.blit(pygame.transform.scale(load_image('Sprite-floor.png'), screen_size), (0, 0))
+        if hero.y <= middle_coordinates:
+            top_tools.draw(screen)
+            hero_group.draw(screen)
+            workbench_group.draw(screen)
+            bottom_tools.draw(screen)
+            side_tools.draw(screen)
         else:
-            move(hero, "down", shift)
-    elif keys[pygame.K_a]:
-        move(hero, "left", shift)
-    elif keys[pygame.K_d]:
-        move(hero, "right", shift)
-    if keys[pygame.K_f]:
-        choosing_tools()
-    if keys[pygame.K_1]:
-        hero.active_inventory = True
-    elif keys[pygame.K_2]:
-        hero.active_inventory = False
+            top_tools.draw(screen)
+            workbench_group.draw(screen)
+            side_tools.draw(screen)
+            hero_group.draw(screen)
+            bottom_tools.draw(screen)
 
-    if keys[pygame.K_TAB]:
-        print(hero.inventory1, hero.inventory2)
-
-    screen.fill(pygame.Color("black"))
-    screen.blit(pygame.transform.scale(load_image('Sprite-floor.png'), screen_size), (0, 0))
-    if hero.y <= middle_coordinates:
-        top_tools.draw(screen)
-        hero_group.draw(screen)
-        workbench_group.draw(screen)
-        bottom_tools.draw(screen)
-        side_tools.draw(screen)
-    else:
-        top_tools.draw(screen)
-        workbench_group.draw(screen)
-        side_tools.draw(screen)
-        hero_group.draw(screen)
-        bottom_tools.draw(screen)
-
-    # sprite_group.draw(screen)
-    # pygame.draw.rect(screen, (255, 255, 255), workbench.access_rect)
-    clock.tick(FPS)
-    pygame.display.flip()
-pygame.quit()
+        # hero_group.draw(screen)
+        pygame.draw.rect(screen, (255, 255, 255), hero.access_rect)
+        # pygame.draw.rect(screen, (44, 44, 44), flsun.access_rect)
+        clock.tick(FPS)
+        pygame.display.flip()
+    pygame.quit()
