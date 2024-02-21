@@ -12,7 +12,7 @@ def load_image(name, color_key=None):
         raise SystemExit(message)
     image = image.convert_alpha()
     if color_key is not None:
-        if color_key is -1:
+        if color_key == -1:
             color_key = image.get_at((0, 0))
         image.set_colorkey(color_key)
     return image
@@ -182,7 +182,7 @@ class Player(Sprite):
 
 
 
-def start_screen():
+def start_screen(screen_size):
     intro_text = ["     Kvant HighTech", "",
                   "     Использовать английскую раскладку"]
 
@@ -262,39 +262,8 @@ def terminate():
     sys.exit
 
 
-if __name__ == "__main__":
-    pygame.init()
-    screen_size = (1500, 900)
-    screen = pygame.display.set_mode(screen_size)
-
-    sprite_group = SpriteGroup()
-    tools_group = SpriteGroup()
-    test_storage = Storage(load_image('test.jpg'), load_image('contrast_flsan.png'), (200, 170),
-                           (300, 730), 'PLA', 'top', 55)
-    flsun = Tools(load_image('flsun.png'), load_image('flsun_dedicated.png'), (200, 170),
-                  (590, 730), 2, {'PLA': '3D stuff'}, 'top', 55)
-    workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (400, 300),
-                      (400, 300), 1, {'smth': 'good_smth'}, 'top bottom left right', 50)
-    middle_coordinates = (workbench.y + workbench.size[1]) // 2
-    staffs = [workbench, flsun, test_storage]
-    workbench_group = SpriteGroup()
-    workbench_group.add(workbench)
-    bottom_tools = SpriteGroup()
-    bottom_tools.add(flsun)
-    bottom_tools.add(test_storage)
-    top_tools = SpriteGroup()
-    side_tools = SpriteGroup()
-
-    access_tools = []
-    player_image = load_image('character_front.png')
-    player_image_lateral = load_image('character_lateral.png')
-    player_image_back = load_image('character_back.png')
-    player_size = (100, 130)
-    hero_group = SpriteGroup()
-    hero = Player((0, 0), player_size)
-
-    clock = pygame.time.Clock()
-    start_screen()
+def start_game(screen_size):
+    start_screen(screen_size)
     running = True
 
     while running:
@@ -357,3 +326,171 @@ if __name__ == "__main__":
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
+
+
+class Button:
+    def __init__(self, image, pos, text_input, font, base_color, hovering_color):
+        self.image = image
+        self.x_pos = pos[0]
+        self.y_pos = pos[1]
+        self.font = font
+        self.base_color, self.hovering_color = base_color, hovering_color
+        self.text_input = text_input
+        self.text = self.font.render(self.text_input, True, self.base_color)
+        if self.image is None:
+            self.image = self.text
+        self.rect = self.image.get_rect(center=(self.x_pos, self.y_pos))
+        self.text_rect = self.text.get_rect(center=(self.x_pos, self.y_pos))
+
+    def update(self, screen):
+        if self.image is not None:
+            screen.blit(self.image, self.rect)
+        screen.blit(self.text, self.text_rect)
+
+    def checkForInput(self, position):
+        if position[0] in range(self.rect.left, self.rect.right) and position[1] in range(self.rect.top,
+                                                                                          self.rect.bottom):
+            return True
+        return False
+
+    def changeColor(self, position):
+        if position[0] in range(self.rect.left, self.rect.right) and position[1] in range(self.rect.top,
+                                                                                          self.rect.bottom):
+            self.text = self.font.render(self.text_input, True, self.hovering_color)
+        else:
+            self.text = self.font.render(self.text_input, True, self.base_color)
+
+
+def get_font(size):
+    return pygame.font.Font("data/font.ttf", size)  # Add font
+
+
+def Play():
+    start_game((1400, 800))
+
+
+def Options():
+    while True:
+        OPTIONS_MOUSE_POS = pygame.mouse.get_pos()
+        SCREEN.fill("black")
+        OPTIONS_TEXT = get_font(45).render("This is the OPTIONS screen.", True, "White")
+        OPTIONS_RECT = OPTIONS_TEXT.get_rect(center=(640, 460))
+        SCREEN.blit(OPTIONS_TEXT, OPTIONS_RECT)
+        OPTIONS_BACK = Button(image=None, pos=(640, 460),
+                              text_input="BACK", font=get_font(75), base_color="White", hovering_color="Green")
+
+        OPTIONS_BACK.changeColor(OPTIONS_MOUSE_POS)
+        OPTIONS_BACK.update(SCREEN)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if OPTIONS_BACK.checkForInput(OPTIONS_MOUSE_POS):
+                    Main_menu()
+
+        pygame.display.update()
+
+
+def Main_menu():
+    while True:
+        SCREEN.blit(BG, (0, 0))
+        MENU_MOUSE_POS = pygame.mouse.get_pos()
+        MENU_TEXT = get_font(100).render("MAIN MENU", True, "#b68f40")
+        MENU_RECT = MENU_TEXT.get_rect(center=(640, 100))
+        PLAY_BUTTON = Button(image=pygame.image.load("data/Play Rect.png"), pos=(640, 250),
+                             text_input="PLAY", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        OPTIONS_BUTTON = Button(image=pygame.image.load("data/Options Rect.png"), pos=(640, 400),
+                                text_input="OPTIONS", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 550),
+                             text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        SCREEN.blit(MENU_TEXT, MENU_RECT)
+        for button in [PLAY_BUTTON, OPTIONS_BUTTON, QUIT_BUTTON]:
+            button.changeColor(MENU_MOUSE_POS)
+            button.update(SCREEN)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    Play()
+                    sys.exit()
+                if OPTIONS_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    Options()
+                if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):
+                    pygame.quit()
+                    sys.exit()
+
+        pygame.display.update()
+
+
+if __name__ == "__main__":
+    pygame.init()
+
+    SCREEN = pygame.display.set_mode((1280, 720))
+    pygame.display.set_caption("Menu")
+
+    BG = pygame.image.load("data/Background.png")  # Add menu screen
+
+    pygame.init()
+    screen_size = (1280, 720)
+    screen = pygame.display.set_mode(screen_size)
+
+    sprite_group = SpriteGroup()
+    tools_group = SpriteGroup()
+    flsun = Tools(load_image('test.png'), load_image('flsun_dedicated.png'), (190, 160),
+                  (333, 558), 2, {'PLA': '3D stuff'}, "top", 55)
+    wanhao = Tools(load_image('wanhao.png'), load_image('wanhao_dedicated.png'), (190, 160),
+                   (530, 558), 2, {'PLA': '3D stuff'}, "top", 55)
+    her = Tools(load_image('her.png'), load_image('her_dedicated.png'), (200, 190),
+                (725, 529), 2, {'PLA': '3D stuff'}, "top", 55)
+    garbage = Tools(load_image('garbage.png'), load_image('garbage_dedicated.png'), (130, 170),
+                    (935, 539), 2, {'PLA': '3D stuff'}, "top", 55)
+    soldering = Tools(load_image('soldering.png'), load_image('soldering_dedicated.png'), (140, 235),
+                      (8, 480), 2, {'PLA': '3D stuff'}, "left right", 55)
+    sandpaper = Tools(load_image('sandpaper.png'), load_image('sandpaper_dedicated.png'), (130, 180),
+                      (21, 280), 2, {'PLA': '3D stuff'}, "left right", 55)
+    painting = Tools(load_image('painting.png'), load_image('painting_dedicated.png'), (220, 220),
+                     (30, 0), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+    trotec = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
+                   (270, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+    trotec_2 = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
+                     (520, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+    rack = Tools(load_image('rack.png'), load_image('rack_dedicated.png'), (110, 200),
+                 (890, 40), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+    buld = Tools(load_image('buld.png'), load_image('buld_dedicated.png'), (260, 170),
+                 (990, 70), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+    workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (472, 232),
+                      (350, 300), 1, {'smth': 'good_smth'}, "left right", 50)
+    middle_coordinates = (workbench.y + workbench.size[1]) // 2
+    staffs = [workbench, flsun, wanhao, her, garbage, soldering, sandpaper, trotec, trotec_2, buld, rack]
+    workbench_group = SpriteGroup()
+    bottom_tools = SpriteGroup()
+    bottom_tools.add(flsun)
+    bottom_tools.add(workbench)
+    bottom_tools.add(rack)
+    bottom_tools.add(buld)
+    bottom_tools.add(trotec_2)
+    bottom_tools.add(soldering)
+    bottom_tools.add(trotec)
+
+    bottom_tools.add(wanhao)
+    bottom_tools.add(sandpaper)
+    bottom_tools.add(her)
+    bottom_tools.add(garbage)
+    top_tools = SpriteGroup()
+    side_tools = SpriteGroup()
+
+    access_tools = []
+    player_image = load_image('character_front.png')
+    player_image_lateral = load_image('character_lateral.png')
+    player_image_back = load_image('character_back.png')
+    player_size = (100, 130)
+    hero_group = SpriteGroup()
+    hero = Player((0, 0), player_size)
+
+    clock = pygame.time.Clock()
+
+    Main_menu()
