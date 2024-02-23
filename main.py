@@ -216,50 +216,51 @@ def choosing_tools():
 
 
 clock = pygame.time.Clock()
-start_screen()
-running = True
 
+def start_game():
+    start_screen()
+    running = True
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
-        shift = True
-    else:
-        shift = False
-    if keys[pygame.K_w]:
-        if keys[pygame.K_a]:
-            move(hero, "up_left", shift)
-        elif keys[pygame.K_d]:
-            move(hero, "up_right", shift)
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+            shift = True
         else:
-            move(hero, "up", shift)
-    elif keys[pygame.K_s]:
-        if keys[pygame.K_a]:
-            move(hero, "down_left", shift)
+            shift = False
+        if keys[pygame.K_w]:
+            if keys[pygame.K_a]:
+                move(hero, "up_left", shift)
+            elif keys[pygame.K_d]:
+                move(hero, "up_right", shift)
+            else:
+                move(hero, "up", shift)
+        elif keys[pygame.K_s]:
+            if keys[pygame.K_a]:
+                move(hero, "down_left", shift)
+            elif keys[pygame.K_d]:
+                move(hero, "down_right", shift)
+            else:
+                move(hero, "down", shift)
+        elif keys[pygame.K_a]:
+            move(hero, "left", shift)
         elif keys[pygame.K_d]:
-            move(hero, "down_right", shift)
-        else:
-            move(hero, "down", shift)
-    elif keys[pygame.K_a]:
-        move(hero, "left", shift)
-    elif keys[pygame.K_d]:
-        move(hero, "right", shift)
-    if keys[pygame.K_f]:
-        choosing_tools()
+            move(hero, "right", shift)
+        if keys[pygame.K_f]:
+            choosing_tools()
 
-    screen.fill(pygame.Color("black"))
-    screen.blit(pygame.transform.scale(load_image('Sprite-floor.png'), screen_size), (0, 0))
-    if hero.top_bottom:
-        hero_group.draw(screen)
-        tools_group.draw(screen)
-    else:
-        tools_group.draw(screen)
-        hero_group.draw(screen)
-    # sprite_group.draw(screen)
-    # pygame.draw.rect(screen, (255, 255, 255), test.access_rect)
-    clock.tick(FPS)
-    pygame.display.flip()
-pygame.quit()
+        screen.fill(pygame.Color("black"))
+        screen.blit(pygame.transform.scale(load_image('Sprite-floor.png'), screen_size), (0, 0))
+        if hero.top_bottom:
+            hero_group.draw(screen)
+            tools_group.draw(screen)
+        else:
+            tools_group.draw(screen)
+            hero_group.draw(screen)
+        # sprite_group.draw(screen)
+        # pygame.draw.rect(screen, (255, 255, 255), test.access_rect)
+        clock.tick(FPS)
+        pygame.display.flip()
+    pygame.quit()
