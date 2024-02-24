@@ -49,7 +49,7 @@ def Music():
     pass
 
 
-def LanSWINTCH():
+def LanSWITCH():
     pass
 
 
@@ -63,6 +63,8 @@ def Resume():
         SCREEN.blit(RM, (0, 0))
         RESUME_MOUSE_POS = pygame.mouse.get_pos()
         RESUME_TEXT = get_font(25).render("Information", True, "Black")
+        INSTRUCTION_TITLE1_TEXT = get_font(20).render("Hightecher's---", True, "Black")
+        INSTRUCTION_TITLE2_TEXT = get_font(20).render("----------Notes", True, "Black")
         RESUME_TEXT2 = get_font(15).render("Вы когда-нибудь задумывались",
                                            True, "Black")
         RESUME_TEXT3 = get_font(15).render("что делают эти дети из техно-",
@@ -77,7 +79,39 @@ def Resume():
                                            True, "Black")
         RESUME_TEXT8 = get_font(15).render("одним из таких - ХАЙТЕКЕРОМ!",
                                            True, "Black")
+        INSTRUCTION_TEXT = get_font(15).render("“PLAY” - меню для выбора уро-",
+                                               True, "Black")
+        INSTRUCTION_TEXT2 = get_font(15).render("вня сложности в предстоящей",
+                                                True, "Black")
+        INSTRUCTION_TEXT3 = get_font(15).render("игре.",
+                                                True, "Black")
+        INSTRUCTION_TEXT4 = get_font(15).render("Кнопка “QUIT” - выход из игры.",
+                                                True, "Black")
+        INSTRUCTION_TEXT5 = get_font(15).render("Желаем удачи! Дополнительную",
+                                                True, "Black")
+        INSTRUCTION_TEXT6 = get_font(15).render("информацию по разработке можно",
+                                                True, "Black")
+        INSTRUCTION_TEXT7 = get_font(15).render("узнать здесь…",
+                                                True, "Black")
+        SIGNATURE_TEXT1 = get_font(15).render("vk.com/bgele",
+                                              True, "Green")
+        SIGNATURE_TEXT2 = get_font(15).render("vk.com/hackforge_industries",
+                                              True, "Green")
+        SIGNATURE_TEXT3 = get_font(15).render("vk.com/thesameamiten",
+                                              True, "Green")
         RESUME_RECT = RESUME_TEXT.get_rect(center=(300, 95))
+        INSTRUCTION_TITLE1_RECT = RESUME_TEXT.get_rect(center=(830, 75))
+        INSTRUCTION_TITLE2_RECT = RESUME_TEXT.get_rect(center=(830, 100))
+        INSTRUCTION_RECT = RESUME_TEXT.get_rect(center=(770, 205))
+        INSTRUCTION_RECT2 = RESUME_TEXT.get_rect(center=(770, 235))
+        INSTRUCTION_RECT3 = RESUME_TEXT.get_rect(center=(770, 265))
+        INSTRUCTION_RECT4 = RESUME_TEXT.get_rect(center=(770, 295))
+        INSTRUCTION_RECT5 = RESUME_TEXT.get_rect(center=(770, 325))
+        INSTRUCTION_RECT6 = RESUME_TEXT.get_rect(center=(770, 355))
+        INSTRUCTION_RECT7 = RESUME_TEXT.get_rect(center=(770, 385))
+        SIGNATURE_RECT1 = RESUME_TEXT.get_rect(center=(770, 415))
+        SIGNATURE_RECT2 = RESUME_TEXT.get_rect(center=(770, 445))
+        SIGNATURE_RECT3 = RESUME_TEXT.get_rect(center=(770, 475))
         RESUME_RECT2 = RESUME_TEXT2.get_rect(center=(320, 140))
         RESUME_RECT3 = RESUME_TEXT2.get_rect(center=(320, 175))
         RESUME_RECT4 = RESUME_TEXT2.get_rect(center=(320, 205))
@@ -85,6 +119,18 @@ def Resume():
         RESUME_RECT6 = RESUME_TEXT2.get_rect(center=(320, 265))
         RESUME_RECT7 = RESUME_TEXT2.get_rect(center=(320, 295))
         RESUME_RECT8 = RESUME_TEXT2.get_rect(center=(320, 325))
+        SCREEN.blit(INSTRUCTION_TITLE1_TEXT, INSTRUCTION_TITLE1_RECT)
+        SCREEN.blit(INSTRUCTION_TITLE2_TEXT, INSTRUCTION_TITLE2_RECT)
+        SCREEN.blit(INSTRUCTION_TEXT, INSTRUCTION_RECT)
+        SCREEN.blit(INSTRUCTION_TEXT2, INSTRUCTION_RECT2)
+        SCREEN.blit(INSTRUCTION_TEXT3, INSTRUCTION_RECT3)
+        SCREEN.blit(INSTRUCTION_TEXT4, INSTRUCTION_RECT4)
+        SCREEN.blit(INSTRUCTION_TEXT5, INSTRUCTION_RECT5)
+        SCREEN.blit(INSTRUCTION_TEXT6, INSTRUCTION_RECT6)
+        SCREEN.blit(INSTRUCTION_TEXT7, INSTRUCTION_RECT7)
+        SCREEN.blit(SIGNATURE_TEXT1, SIGNATURE_RECT1)
+        SCREEN.blit(SIGNATURE_TEXT2, SIGNATURE_RECT2)
+        SCREEN.blit(SIGNATURE_TEXT3, SIGNATURE_RECT3)
         SCREEN.blit(RESUME_TEXT, RESUME_RECT)
         SCREEN.blit(RESUME_TEXT2, RESUME_RECT2)
         SCREEN.blit(RESUME_TEXT3, RESUME_RECT3)
@@ -131,7 +177,7 @@ def Play():     # start_game()
                             text_input="GO", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
         GO3_BUTTON = Button(image=None, pos=(1060, 500),
                             text_input="GO", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
-        PLAY_BACK = Button(image=None, pos=(640, 630),
+        PLAY_BACK = Button(image=None, pos=(640, 650),
                            text_input="BACK", font=get_font(75), base_color="White", hovering_color="Green")
         for button in [GO1_BUTTON, GO2_BUTTON, GO3_BUTTON, PLAY_BACK]:
             button.changeColor(PLAY_MOUSE_POS)
@@ -144,6 +190,10 @@ def Play():     # start_game()
                 if PLAY_BACK.checkForInput(PLAY_MOUSE_POS):
                     Main_menu()
                 if GO1_BUTTON.checkForInput(PLAY_MOUSE_POS):
+                    Levels()
+                if GO2_BUTTON.checkForInput(PLAY_MOUSE_POS):
+                    Levels()
+                if GO3_BUTTON.checkForInput(PLAY_MOUSE_POS):
                     Levels()
         pygame.display.update()
 
@@ -179,7 +229,7 @@ def Setting():
                 if RESUME_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
                     Resume()
                 if LANGUAGE_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
-                    LanSWINTCH()
+                    LanSWITCH()
                 if MUSIC_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
                     Music()
         pygame.display.update()
