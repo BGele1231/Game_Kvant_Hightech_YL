@@ -1,5 +1,6 @@
 import pygame
 import sys
+# import gui
 from main import start_game
 
 pygame.init()
@@ -55,6 +56,33 @@ def LanSWITCH():
 
 def Levels():
     start_game()
+
+
+def EndScreen():
+    ES = pygame.image.load("data/Screenshot.png")
+    while True:
+        SCREEN.blit(ES, (0, 0))
+        END_SCREEN_MOUSE_POS = pygame.mouse.get_pos()
+        END_SCREEN_TEXT = get_font(100).render("SETTINGS", True, "#ffe521")
+        END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
+        SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
+        QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 550),
+                             text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        END_SCREEN_BACK = Button(image=None, pos=(640, 630),
+                                 text_input="BACK", font=get_font(75), base_color="White", hovering_color="Green")
+        END_SCREEN_BACK.changeColor(END_SCREEN_MOUSE_POS)
+        END_SCREEN_BACK.update(SCREEN)
+        for button in [END_SCREEN_BACK, QUIT_BUTTON]:
+            button.changeColor(END_SCREEN_MOUSE_POS)
+            button.update(SCREEN)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if END_SCREEN_BACK.checkForInput(END_SCREEN_MOUSE_POS):
+                    start_game((1280, 720))
+                    sys.exit()
 
 
 def Resume():
