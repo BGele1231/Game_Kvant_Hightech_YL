@@ -1,6 +1,5 @@
 import pygame
 import sys
-# import gui
 from main import start_game
 
 pygame.init()
@@ -66,13 +65,13 @@ def EndScreen():
         END_SCREEN_TEXT = get_font(100).render("SETTINGS", True, "#ffe521")
         END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
         SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
-        QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 550),
+        QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 450),
                              text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
-        END_SCREEN_BACK = Button(image=None, pos=(640, 630),
+        END_SCREEN_CONT = Button(image=None, pos=(640, 630),
                                  text_input="BACK", font=get_font(75), base_color="White", hovering_color="Green")
-        END_SCREEN_BACK.changeColor(END_SCREEN_MOUSE_POS)
-        END_SCREEN_BACK.update(SCREEN)
-        for button in [END_SCREEN_BACK, QUIT_BUTTON]:
+        END_SCREEN_CONT.changeColor(END_SCREEN_MOUSE_POS)
+        END_SCREEN_CONT.update(SCREEN)
+        for button in [END_SCREEN_CONT, QUIT_BUTTON]:
             button.changeColor(END_SCREEN_MOUSE_POS)
             button.update(SCREEN)
         for event in pygame.event.get():
@@ -80,9 +79,10 @@ def EndScreen():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if END_SCREEN_BACK.checkForInput(END_SCREEN_MOUSE_POS):
-                    start_game((1280, 720))
+                if END_SCREEN_CONT.checkForInput(END_SCREEN_MOUSE_POS):
+                    Play()
                     sys.exit()
+        pygame.display.update()
 
 
 def Resume():
