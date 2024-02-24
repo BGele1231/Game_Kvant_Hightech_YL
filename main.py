@@ -1,7 +1,7 @@
 import pygame
 import os
 import sys
-
+import recipe
 
 def load_image(name, color_key=None):
     fullname = os.path.join('data', name)
@@ -19,9 +19,9 @@ def load_image(name, color_key=None):
 
 
 FPS = 50
-OVERLAP = 60  # на сколько пикселей герой может перекрывать другие спрайты
-ACCESS_ZONE = 10  # отступ для зоны доступа инструментов
-PLAYER_CONST = 7  # отступ внутрь прямоугольника для пересечений access_rect
+OVERLAP = 70  # на сколько пикселей герой может перекрывать другие спрайты
+ACCESS_ZONE = 15  # отступ для зоны доступа инструментов
+PLAYER_CONST = 10  # отступ внутрь прямоугольника для пересечений access_rect
 
 
 class ScreenFrame(pygame.sprite.Sprite):
@@ -49,7 +49,7 @@ class Sprite(pygame.sprite.Sprite):
 
 
 class Tools(Sprite):
-    def __init__(self, image, dedicated_image, size, pos, time, recipes, access_sides, redundant_height=0, name=""):
+    def __init__(self, image, dedicated_image, size, pos, time, recipes, access_sides, name="", redundant_height=0):
         super().__init__(tools_group)
         self.image = pygame.transform.scale(image, size)
         self.first_image = pygame.transform.scale(image, size)  # обычное изображение
@@ -83,7 +83,7 @@ class Tools(Sprite):
             else:
                 x_ac_size = size[0] + ACCESS_ZONE
         else:
-            if 'bottom' in access_sides:
+            if 'right' in access_sides:
                 x_ac_size = size[0] + ACCESS_ZONE
         self.access_rect = pygame.Rect(x_ac, y_ac, x_ac_size, y_ac_size)
 
@@ -118,8 +118,8 @@ class Tools(Sprite):
 
 
 class Storage(Tools):
-    def __init__(self, image, dedicated_image, size, pos, product, access_sides, redundant_height=0):
-        super().__init__(image, dedicated_image, size, pos, 0, {'': product}, access_sides, redundant_height)
+    def __init__(self, image, dedicated_image, size, pos, product, access_sides, redundant_height=0, name=""):
+        super().__init__(image, dedicated_image, size, pos, 0, {'': product}, access_sides, name, redundant_height)
 
     def making(self):
         # где-то тут выбор точного материала
@@ -140,7 +140,7 @@ class Player(Sprite):
         self.image = pygame.transform.scale(player_image, size)
         self.size = size
         self.busy = False  # в действии или нет
-        self.rect = self.image.get_rect()
+        self.rect = self.image.get_rect().move(pos)
         self.mask = pygame.mask.from_surface(self.image)
         self.x = pos[0]
         self.y = pos[1]
@@ -160,7 +160,7 @@ class Player(Sprite):
             if (((x > i.x + i.size[0] or i.x > x + self.rect.size[0]) or
                  ((y > i.y + i.size[1] - OVERLAP) or (i.y + i.redundant_height > y + self.rect.size[1]))) and
                     0 <= x <= screen_size[0] - self.rect.size[0] and
-                    0 <= y <= screen_size[1] - self.rect.size[1]):
+                    55 <= y <= screen_size[1] - self.rect.size[1]):
                 # hero.top_bottom = False
                 flag = True
             else:
@@ -329,6 +329,7 @@ def start_game(screen_size):
 
         if keys[pygame.K_TAB]:
             print(hero.inventory1, hero.inventory2)
+            print(hero.y)
 
         screen.fill(pygame.Color("black"))
         screen.blit(pygame.transform.scale(load_image('Sprite-floor.png'), screen_size), (0, 0))
@@ -346,7 +347,7 @@ def start_game(screen_size):
             bottom_tools.draw(screen)
 
         # hero_group.draw(screen)
-        pygame.draw.rect(screen, (255, 255, 255), hero.access_rect)
+        # pygame.draw.rect(screen, (255, 255, 255), hero.access_rect)
         # pygame.draw.rect(screen, (44, 44, 44), flsun.access_rect)
         clock.tick(FPS)
         pygame.display.flip()
@@ -467,55 +468,58 @@ if __name__ == "__main__":
     sprite_group = SpriteGroup()
     tools_group = SpriteGroup()
     flsun = Tools(load_image('test.png'), load_image('flsun_dedicated.png'), (190, 160),
-                  (333, 558), 2, {'PLA': '3D stuff'}, "top", 55, "flsun")
+                  (333, 558), 2, {'PLA': '3D stuff'}, "top left","flsun", 55)
     wanhao = Tools(load_image('wanhao.png'), load_image('wanhao_dedicated.png'), (190, 160),
-                   (530, 558), 2, {'PLA': '3D stuff'}, "top", 55, "wanhao_1")
+                   (530, 558), 2, {'PLA': '3D stuff'}, "top", "wanhao_1", 55)
     her = Tools(load_image('her.png'), load_image('her_dedicated.png'), (200, 190),
-                (725, 529), 2, {'PLA': '3D stuff'}, "top", 55, "hercules_1")
+                (725, 529), 2, {'PLA': '3D stuff'}, "top", "hercules_1", 80)
     garbage = Tools(load_image('garbage.png'), load_image('garbage_dedicated.png'), (130, 170),
-                    (935, 539), 2, {'PLA': '3D stuff'}, "top", 55, "garbage_1")
+                    (935, 539), 2, {'PLA': '3D stuff'}, "top right", "garbage_1", 85)
     soldering = Tools(load_image('soldering.png'), load_image('soldering_dedicated.png'), (140, 235),
-                      (8, 480), 2, {'PLA': '3D stuff'}, "left right", 55, "soldering_1")
+                      (8, 480), 2, {'PLA': '3D stuff'}, "right", "soldering_1")
     sandpaper = Tools(load_image('sandpaper.png'), load_image('sandpaper_dedicated.png'), (130, 180),
-                      (21, 280), 2, {'PLA': '3D stuff'}, "left right", 55, "sandpaper_1")
+                      (21, 280), 2, {'PLA': '3D stuff'}, "right top", "sandpaper_1", 33)
     painting = Tools(load_image('painting.png'), load_image('painting_dedicated.png'), (220, 220),
-                     (30, 0), 2, {'PLA': '3D stuff'}, "top bottom", 55, "painting_1")
+                     (30, 0), 2, {'PLA': '3D stuff'}, "bottom", "painting_1")
     trotec = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
-                   (270, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55, "trotec_1")
+                   (270, 50), 2, {'PLA': '3D stuff'}, "bottom", "trotec_1")
     trotec_2 = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
-                     (520, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55, "trotec_1")
-    rack = Tools(load_image('rack.png'), load_image('rack_dedicated.png'), (110, 200),
-                 (890, 40), 2, {'PLA': '3D stuff'}, "top bottom", 55, "rack_1")
-    buld = Tools(load_image('buld.png'), load_image('buld_dedicated.png'), (260, 170),
-                 (990, 70), 2, {'PLA': '3D stuff'}, "top bottom", 55, "buld_1")
+                     (520, 50), 2, {'PLA': '3D stuff'}, "bottom", "trotec_1")
+    buld = Tools(load_image('buld.png'), load_image('buld_dedicated.png'), (170, 260),
+                 (1105, 160), 2, {'PLA': '3D stuff'}, "left", "buld_1")
     workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (472, 232),
-                      (350, 300), 1, {'smth': 'good_smth'}, "left right", 50, "workbench_1")
+                      (350, 300), 1, {'smth': 'good_smth'}, "top bottom left right", "workbench_1")
+    rack = Storage(load_image('rack.png'), load_image('rack_dedicated.png'), (110, 200), (970, 40),
+                   {'PLA': '3D stuff'}, "left bottom", 55, "rack_1")
     middle_coordinates = (workbench.y + workbench.size[1]) // 2
-    staffs = [workbench, flsun, wanhao, her, garbage, soldering, sandpaper, trotec, trotec_2, buld, rack]
+    staffs = [workbench, flsun, wanhao, her, garbage, soldering, sandpaper, trotec, trotec_2, buld, rack, painting]
     workbench_group = SpriteGroup()
+    workbench_group.add(workbench)
+
     bottom_tools = SpriteGroup()
     bottom_tools.add(flsun)
-    bottom_tools.add(workbench)
-    bottom_tools.add(rack)
-    bottom_tools.add(buld)
-    bottom_tools.add(trotec_2)
-    bottom_tools.add(soldering)
-    bottom_tools.add(trotec)
-
     bottom_tools.add(wanhao)
-    bottom_tools.add(sandpaper)
     bottom_tools.add(her)
     bottom_tools.add(garbage)
+
     top_tools = SpriteGroup()
+    top_tools.add(painting)
+    top_tools.add(trotec)
+    top_tools.add(trotec_2)
+    top_tools.add(rack)
+
     side_tools = SpriteGroup()
+    side_tools.add(sandpaper)
+    side_tools.add(soldering)
+    side_tools.add(buld)
 
     access_tools = []
     player_image = load_image('character_front.png')
     player_image_lateral = load_image('character_lateral.png')
-    player_image_back = load_image('character_back.png')
-    player_size = (100, 130)
+    player_image_back = load_image('character_back1.png')
+    player_size = (95, 130)
     hero_group = SpriteGroup()
-    hero = Player((0, 0), player_size)
+    hero = Player((760, 60), player_size)
 
     clock = pygame.time.Clock()
 
