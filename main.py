@@ -1,6 +1,8 @@
+import threading
 import pygame
 import os
 import sys
+import time
 
 
 def load_image(name, color_key=None):
@@ -57,6 +59,7 @@ class Tools(Sprite):
         self.rect = pygame.Rect((*pos, *size))
         self.size = size
         self.busy = False  # занят изготовлением или нет
+        self.res = False # Готовое изделие в станке
         self.time = time
         self.recipes = recipes  # словарь, ключ - материал, значение - продукт
         self.x = pos[0]
@@ -86,6 +89,11 @@ class Tools(Sprite):
             if 'bottom' in access_sides:
                 x_ac_size = size[0] + ACCESS_ZONE
         self.access_rect = pygame.Rect(x_ac, y_ac, x_ac_size, y_ac_size)
+
+    def timer(self, time):
+        time.sleep(time)
+        self.res = True
+        self.busy = False
 
     def making(self):
         if not self.state:
@@ -255,10 +263,11 @@ def move(hero, movement, shift):
 def choosing_tools():
     print(access_tools)
     # for j in access_tools:
-    k = access_tools[0].making()
-    if k:
-        pass
-        # доделать ВЫВОД НА ЭКРАН, k будет сообщением
+    if len(access_tools) != 0:
+        k = access_tools[0].making()
+        if k:
+            pass
+            # доделать ВЫВОД НА ЭКРАН, k будет сообщением
 
 
 def terminate():
