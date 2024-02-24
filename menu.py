@@ -57,12 +57,42 @@ def Levels():
     start_game()
 
 
+def PauseMenu():
+    ES = pygame.image.load("data/ScreenshotPull.png")
+    CR = pygame.image.load("data/MiniMenu.png")
+    while True:
+        SCREEN.blit(ES, (0, 0))
+        SCREEN.blit(CR, (120, 120))
+        END_SCREEN_MOUSE_POS = pygame.mouse.get_pos()
+        END_SCREEN_TEXT = get_font(100).render("CONGRATULATIONS", True, "#ffe521")
+        END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
+        SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
+        QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 450),
+                             text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        END_SCREEN_CONT = Button(image=None, pos=(640, 630),
+                                 text_input="CONT", font=get_font(75), base_color="White", hovering_color="Green")
+        END_SCREEN_CONT.changeColor(END_SCREEN_MOUSE_POS)
+        END_SCREEN_CONT.update(SCREEN)
+        for button in [END_SCREEN_CONT, QUIT_BUTTON]:
+            button.changeColor(END_SCREEN_MOUSE_POS)
+            button.update(SCREEN)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if END_SCREEN_CONT.checkForInput(END_SCREEN_MOUSE_POS):
+                    start_game()
+                    sys.exit()
+        pygame.display.update()
+
+
 def EndScreen():
-    ES = pygame.image.load("data/Screenshot.png")
+    ES = pygame.image.load("data/ScreenshotPull.png")
     while True:
         SCREEN.blit(ES, (0, 0))
         END_SCREEN_MOUSE_POS = pygame.mouse.get_pos()
-        END_SCREEN_TEXT = get_font(100).render("SETTINGS", True, "#ffe521")
+        END_SCREEN_TEXT = get_font(100).render("CONGRATULATIONS", True, "#ffe521")
         END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
         SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
         QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 450),
