@@ -45,8 +45,16 @@ def get_font(size):
     return pygame.font.Font("data/font.ttf", size)  # Add font
 
 
-def Levels():
+def Music():
     pass
+
+
+def LanSWINTCH():
+    pass
+
+
+def Levels():
+    start_game()
 
 
 def Resume():
@@ -54,13 +62,41 @@ def Resume():
     while True:
         SCREEN.blit(RM, (0, 0))
         RESUME_MOUSE_POS = pygame.mouse.get_pos()
-        RESUME_TEXT = get_font(25).render("Information", True, "#ffe521")
-        RESUME_RECT = RESUME_TEXT.get_rect(center=(300, 110))
+        RESUME_TEXT = get_font(25).render("Information", True, "Black")
+        RESUME_TEXT2 = get_font(15).render("Вы когда-нибудь задумывались",
+                                           True, "Black")
+        RESUME_TEXT3 = get_font(15).render("что делают эти дети из техно-",
+                                           True, "Black")
+        RESUME_TEXT4 = get_font(15).render("парков? Что-то там бегают,",
+                                           True, "Black")   # одним из таких - хайтекером!
+        RESUME_TEXT5 = get_font(15).render("пишут, печатают, режут и т.д.",
+                                           True, "Black")
+        RESUME_TEXT6 = get_font(15).render("В этой игре вы сможете погру-",
+                                           True, "Black")
+        RESUME_TEXT7 = get_font(15).render("зиться в процесс становления",
+                                           True, "Black")
+        RESUME_TEXT8 = get_font(15).render("одним из таких - ХАЙТЕКЕРОМ!",
+                                           True, "Black")
+        RESUME_RECT = RESUME_TEXT.get_rect(center=(300, 95))
+        RESUME_RECT2 = RESUME_TEXT2.get_rect(center=(320, 140))
+        RESUME_RECT3 = RESUME_TEXT2.get_rect(center=(320, 175))
+        RESUME_RECT4 = RESUME_TEXT2.get_rect(center=(320, 205))
+        RESUME_RECT5 = RESUME_TEXT2.get_rect(center=(320, 235))
+        RESUME_RECT6 = RESUME_TEXT2.get_rect(center=(320, 265))
+        RESUME_RECT7 = RESUME_TEXT2.get_rect(center=(320, 295))
+        RESUME_RECT8 = RESUME_TEXT2.get_rect(center=(320, 325))
+        SCREEN.blit(RESUME_TEXT, RESUME_RECT)
+        SCREEN.blit(RESUME_TEXT2, RESUME_RECT2)
+        SCREEN.blit(RESUME_TEXT3, RESUME_RECT3)
+        SCREEN.blit(RESUME_TEXT4, RESUME_RECT4)
+        SCREEN.blit(RESUME_TEXT5, RESUME_RECT5)
+        SCREEN.blit(RESUME_TEXT6, RESUME_RECT6)
+        SCREEN.blit(RESUME_TEXT7, RESUME_RECT7)
+        SCREEN.blit(RESUME_TEXT8, RESUME_RECT8)
         RESUME_BACK = Button(image=None, pos=(840, 640),
                              text_input="BACK", font=get_font(75), base_color="White", hovering_color="Green")
         RESUME_BACK.changeColor(RESUME_MOUSE_POS)
         RESUME_BACK.update(SCREEN)
-        SCREEN.blit(RESUME_TEXT, RESUME_RECT)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -71,8 +107,45 @@ def Resume():
         pygame.display.update()
 
 
-def Play():
-    start_game()
+def Play():     # start_game()
+    LV = pygame.image.load("data/LevelsBG.png")
+    LP = pygame.image.load("data/LevelsPlates.png")
+    while True:
+        SCREEN.blit(LV, (0, 0))
+        SCREEN.blit(LP, (70, 35))
+        SCREEN.blit(LP, (490, 35))
+        SCREEN.blit(LP, (910, 35))
+        PLAY_MOUSE_POS = pygame.mouse.get_pos()
+        LEVEL1_TEXT = get_font(30).render("Level 1", True, "White")
+        LEVEL1_RECT = LEVEL1_TEXT.get_rect(center=(220, 120))
+        SCREEN.blit(LEVEL1_TEXT, LEVEL1_RECT)
+        LEVEL2_TEXT = get_font(30).render("Level 2", True, "White")
+        LEVEL2_RECT = LEVEL2_TEXT.get_rect(center=(640, 120))
+        SCREEN.blit(LEVEL2_TEXT, LEVEL2_RECT)
+        LEVEL3_TEXT = get_font(30).render("Level 3", True, "White")
+        LEVEL3_RECT = LEVEL3_TEXT.get_rect(center=(1060, 120))
+        SCREEN.blit(LEVEL3_TEXT, LEVEL3_RECT)
+        GO1_BUTTON = Button(image=None, pos=(220, 500),
+                            text_input="GO", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        GO2_BUTTON = Button(image=None, pos=(640, 500),
+                            text_input="GO", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        GO3_BUTTON = Button(image=None, pos=(1060, 500),
+                            text_input="GO", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        PLAY_BACK = Button(image=None, pos=(640, 630),
+                           text_input="BACK", font=get_font(75), base_color="White", hovering_color="Green")
+        for button in [GO1_BUTTON, GO2_BUTTON, GO3_BUTTON, PLAY_BACK]:
+            button.changeColor(PLAY_MOUSE_POS)
+            button.update(SCREEN)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if PLAY_BACK.checkForInput(PLAY_MOUSE_POS):
+                    Main_menu()
+                if GO1_BUTTON.checkForInput(PLAY_MOUSE_POS):
+                    Levels()
+        pygame.display.update()
 
 
 def Setting():
@@ -83,13 +156,17 @@ def Setting():
         SETTINGS_TEXT = get_font(100).render("SETTINGS", True, "#ffe521")
         SETTINGS_RECT = SETTINGS_TEXT.get_rect(center=(640, 110))     # Text settings
         SCREEN.blit(SETTINGS_TEXT, SETTINGS_RECT)
-        RESUME_BUTTON = Button(image=pygame.image.load("data/Options Rect.png"), pos=(640, 250),
+        RESUME_BUTTON = Button(image=pygame.image.load("data/Options Rect.png"), pos=(640, 230),
                                text_input="RESUME", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        LANGUAGE_BUTTON = Button(image=pygame.image.load("data/Options Rect.png"), pos=(640, 380),
+                                 text_input="LANGUA", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
+        MUSIC_BUTTON = Button(image=pygame.image.load("data/Music icon.png"), pos=(640, 500),
+                              text_input=None, font=get_font(75), base_color="#d7fcd4", hovering_color="White")
         SETTINGS_BACK = Button(image=None, pos=(640, 630),
                                text_input="BACK", font=get_font(75), base_color="White", hovering_color="Green")
         SETTINGS_BACK.changeColor(SETTINGS_MOUSE_POS)
         SETTINGS_BACK.update(SCREEN)
-        for button in [RESUME_BUTTON]:
+        for button in [RESUME_BUTTON, SETTINGS_BACK, LANGUAGE_BUTTON, MUSIC_BUTTON]:
             button.changeColor(SETTINGS_MOUSE_POS)
             button.update(SCREEN)
         for event in pygame.event.get():
@@ -101,6 +178,10 @@ def Setting():
                     Main_menu()
                 if RESUME_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
                     Resume()
+                if LANGUAGE_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
+                    LanSWINTCH()
+                if MUSIC_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
+                    Music()
         pygame.display.update()
 
 
