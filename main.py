@@ -3,7 +3,8 @@ import pygame
 import os
 import sys
 import time
-from menu import Main_menu, Button, get_font, Music, LanSWITCH, Levels, Resume, Play, Setting, level_order, EndScreen
+from menu import (Main_menu, Button, get_font, Music, LanSWITCH, Levels, Resume, Play, Setting, level_order,
+                  EndScreen, PauseMenu)
 
 
 def load_image(name, color_key=None):
@@ -347,10 +348,10 @@ def start_game(screen_size):
             hero.active_inventory = False
 
         if keys[pygame.K_TAB]:
-            print(hero.inventory1, hero.inventory2)
+            EndScreen(start_game)
 
         if keys[pygame.K_ESCAPE]:
-            EndScreen(start_game)
+            PauseMenu(start_game)
 
         screen.fill(pygame.Color("black"))
         screen.blit(pygame.transform.scale(load_image('Sprite-floor.png'), screen_size), (0, 0))
@@ -432,11 +433,11 @@ if __name__ == "__main__":
                    (270, 50), 2, {'Plywood section': 'Keychain'}, "bottom", "trotec_1")
     trotec_2 = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
                      (520, 50), 2, {'Plywood section': 'Keychain'}, "bottom", "trotec_1")
-    buld = Tools(load_image('buld.png'), load_image('buld_dedicated.png'), (170, 260),
-                 (1100, 310), 2, {'Plywood': 'Plywood section'}, "left", "buld_1")
+    buld = Tools(load_image('buld.png'), load_image('buld_dedicated.png'), (290, 190),
+                 (935, 60), 2, {'Plywood': 'Plywood section'}, "bottom", "buld_1")
     workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (472, 232),
                       (350, 300), 1, {'smth': 'good_smth'}, "top bottom left right", "workbench_1")
-    rack = Storage(load_image('rack.png'), load_image('rack_dedicated.png'), (100, 180), (900, 40),
+    rack = Storage(load_image('rack.png'), load_image('rack_dedicated.png'), (100, 180), (1160, 200),
                    {'': 'Plywood'}, "left bottom", 55, "rack_1")
 
     middle_coordinates = (workbench.y + workbench.size[1]) // 2
@@ -454,12 +455,12 @@ if __name__ == "__main__":
     top_tools.add(painting)
     top_tools.add(trotec)
     top_tools.add(trotec_2)
-    top_tools.add(rack)
+    top_tools.add(buld)
 
     side_tools = SpriteGroup()
     side_tools.add(sandpaper)
     side_tools.add(soldering)
-    side_tools.add(buld)
+    side_tools.add(rack)
 
     access_tools = []
     player_image = load_image('character_front.png')
