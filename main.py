@@ -49,7 +49,7 @@ class Sprite(pygame.sprite.Sprite):
 
 
 class Tools(Sprite):
-    def __init__(self, image, dedicated_image, size, pos, time, recipes, access_sides, redundant_height=0):
+    def __init__(self, image, dedicated_image, size, pos, time, recipes, access_sides, redundant_height=0, name=""):
         super().__init__(tools_group)
         self.image = pygame.transform.scale(image, size)
         self.first_image = pygame.transform.scale(image, size)  # обычное изображение
@@ -64,6 +64,7 @@ class Tools(Sprite):
         self.access = False  # персонаж в зоне доступа инструмента или нет
         self.state = True  # сломан или нет
         self.redundant_height = redundant_height
+        self.name = name
 
         x_ac, y_ac, x_ac_size, y_ac_size = self.x, self.y + redundant_height, size[0], size[1] - OVERLAP
         if 'top' in access_sides:
@@ -88,6 +89,7 @@ class Tools(Sprite):
 
     def making(self):
         if not self.state:
+            message(self.name, "it's broken")
             return "it's broken"
         if not self.busy:
             self.busy = True
@@ -99,11 +101,13 @@ class Tools(Sprite):
                 product = self.recipes[hero.inventory2]
                 hero.inventory2 = product
                 return False
-            # отсчёт времени до self.time
+                # отсчёт времени до self.time
             # изменить после таймера self.busy
             print('Making')
+            message(self.name, "You can't take more/I am shorthanded")
             return "I can't take more/I am shorthanded"  # доделать ВЫВОД НА ЭКРАН, что нет свободного места
         else:
+            message(self.name, "it works")
             return "it works"
 
     def fixing(self, time):
@@ -262,10 +266,31 @@ def terminate():
     sys.exit
 
 
-def start_game(screen_size):
-    start_screen(screen_size)
-    running = True
+def message(name, message):
+    font = pygame.font.Font("data/font.ttf", 20)
+    text = font.render(message, True, [255, 255, 255])
+    textpos = (290, 580)
+    a = True
+    window_surf = pygame.image.load(f'data/{name}.png')
+    scale = pygame.transform.scale(
+        window_surf, (window_surf.get_width() // 3,
+                      window_surf.get_height() // 3))
+    window_rect = scale.get_rect(center=(640, 600))
+    screen.blit(scale, window_rect)
+    screen.blit(text, textpos)
+    pygame.display.update()
+    while a:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                a = False
 
+    return
+
+
+def start_game(screen_size):
+    running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -369,6 +394,7 @@ def Play():
     start_game((1400, 800))
 
 
+
 def Options():
     while True:
         OPTIONS_MOUSE_POS = pygame.mouse.get_pos()
@@ -441,29 +467,29 @@ if __name__ == "__main__":
     sprite_group = SpriteGroup()
     tools_group = SpriteGroup()
     flsun = Tools(load_image('test.png'), load_image('flsun_dedicated.png'), (190, 160),
-                  (333, 558), 2, {'PLA': '3D stuff'}, "top", 55)
+                  (333, 558), 2, {'PLA': '3D stuff'}, "top", 55, "flsun")
     wanhao = Tools(load_image('wanhao.png'), load_image('wanhao_dedicated.png'), (190, 160),
-                   (530, 558), 2, {'PLA': '3D stuff'}, "top", 55)
+                   (530, 558), 2, {'PLA': '3D stuff'}, "top", 55, "wanhao_1")
     her = Tools(load_image('her.png'), load_image('her_dedicated.png'), (200, 190),
-                (725, 529), 2, {'PLA': '3D stuff'}, "top", 55)
+                (725, 529), 2, {'PLA': '3D stuff'}, "top", 55, "hercules_1")
     garbage = Tools(load_image('garbage.png'), load_image('garbage_dedicated.png'), (130, 170),
-                    (935, 539), 2, {'PLA': '3D stuff'}, "top", 55)
+                    (935, 539), 2, {'PLA': '3D stuff'}, "top", 55, "garbage_1")
     soldering = Tools(load_image('soldering.png'), load_image('soldering_dedicated.png'), (140, 235),
-                      (8, 480), 2, {'PLA': '3D stuff'}, "left right", 55)
+                      (8, 480), 2, {'PLA': '3D stuff'}, "left right", 55, "soldering_1")
     sandpaper = Tools(load_image('sandpaper.png'), load_image('sandpaper_dedicated.png'), (130, 180),
-                      (21, 280), 2, {'PLA': '3D stuff'}, "left right", 55)
+                      (21, 280), 2, {'PLA': '3D stuff'}, "left right", 55, "sandpaper_1")
     painting = Tools(load_image('painting.png'), load_image('painting_dedicated.png'), (220, 220),
-                     (30, 0), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+                     (30, 0), 2, {'PLA': '3D stuff'}, "top bottom", 55, "painting_1")
     trotec = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
-                   (270, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+                   (270, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55, "trotec_1")
     trotec_2 = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
-                     (520, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+                     (520, 50), 2, {'PLA': '3D stuff'}, "top bottom", 55, "trotec_1")
     rack = Tools(load_image('rack.png'), load_image('rack_dedicated.png'), (110, 200),
-                 (890, 40), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+                 (890, 40), 2, {'PLA': '3D stuff'}, "top bottom", 55, "rack_1")
     buld = Tools(load_image('buld.png'), load_image('buld_dedicated.png'), (260, 170),
-                 (990, 70), 2, {'PLA': '3D stuff'}, "top bottom", 55)
+                 (990, 70), 2, {'PLA': '3D stuff'}, "top bottom", 55, "buld_1")
     workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (472, 232),
-                      (350, 300), 1, {'smth': 'good_smth'}, "left right", 50)
+                      (350, 300), 1, {'smth': 'good_smth'}, "left right", 50, "workbench_1")
     middle_coordinates = (workbench.y + workbench.size[1]) // 2
     staffs = [workbench, flsun, wanhao, her, garbage, soldering, sandpaper, trotec, trotec_2, buld, rack]
     workbench_group = SpriteGroup()
