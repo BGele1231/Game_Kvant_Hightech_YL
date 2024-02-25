@@ -9,8 +9,11 @@ BG = pygame.image.load("data/Background.png")  # Add menu screen
 pause = False
 screen_size = (1280, 720)
 screen = pygame.display.set_mode(screen_size)
-
+sound_menu = pygame.mixer.Sound("data/spokoinaia_muzyka_dlia_fona_bez_slov_chill_F75.mp3")
+sound_menu.play()
+sound_game = pygame.mixer.Sound("data/spokoinaia_muzyka_dlia_fona_bez_slov_chill_vEO.mp3")
 level_order = 1
+count = 1
 
 
 class Button:
@@ -54,8 +57,14 @@ def get_font(size):
     return pygame.font.Font("data/font.ttf", size)  # Add font
 
 
-def Music():
-    pass
+def Music(self):
+    global count
+    if self % 2 != 0:
+        sound_menu.play()
+        sound_game.play()
+    else:
+        sound_menu.stop()
+        sound_game.stop()
 
 
 def LanSWITCH():
@@ -66,6 +75,7 @@ def PauseMenu(start_game):
     global pause
     pause = True
     Main_menu(start_game)
+    sound_menu.play()
 
 
 def EndScreen(start_game):
@@ -200,6 +210,8 @@ def Resume(start_game):
 
 def Play(start_game):     # start_game()
     global level_order
+    Music(count + 1)
+    sound_game.play()
     LV = pygame.image.load("data/LevelsBG.png")
     LP = pygame.image.load("data/LevelsPlates.png")
     while True:
@@ -238,6 +250,8 @@ def Play(start_game):     # start_game()
                 if GO1_BUTTON.checkForInput(PLAY_MOUSE_POS):
                     level_order = 1
                     Levels(start_game, 1)
+                    Music(1)
+                    Music(2)
                 if GO2_BUTTON.checkForInput(PLAY_MOUSE_POS):
                     level_order = 2
                     Levels(start_game, 2)
@@ -280,7 +294,10 @@ def Setting(start_game):
                 if LANGUAGE_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
                     LanSWITCH()
                 if MUSIC_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
-                    Music()
+                    Music(count)
+            if event.type == pygame.MOUSEBUTTONUP:
+                if MUSIC_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
+                    Music(count + 1)
         pygame.display.update()
 
 
@@ -309,6 +326,7 @@ def Main_menu(start_game):
                 if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):
                     if pause:
                         start_game(screen_size, level_order)
+
                         sys.exit()
                     else:
                         Play(start_game)
