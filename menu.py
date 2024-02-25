@@ -1,11 +1,16 @@
 import pygame
 import sys
-from main import start_game
+
 
 pygame.init()
 SCREEN = pygame.display.set_mode((1280, 720))
 pygame.display.set_caption("Menu")
-BG = pygame.image.load("data/Background.png")   # Add menu screen
+BG = pygame.image.load("data/Background.png")  # Add menu screen
+pause = False
+screen_size = (1280, 720)
+screen = pygame.display.set_mode(screen_size)
+
+level_order = 1
 
 
 class Button:
@@ -41,6 +46,10 @@ class Button:
             self.text = self.font.render(self.text_input, True, self.base_color)
 
 
+def Levels(start_game, level):
+    start_game(screen_size, level)
+
+
 def get_font(size):
     return pygame.font.Font("data/font.ttf", size)  # Add font
 
@@ -53,46 +62,22 @@ def LanSWITCH():
     pass
 
 
-def Levels():
-    start_game()
+def PauseMenu(start_game):
+    global pause
+    pause = True
+    Main_menu(start_game)
 
 
-def PauseMenu():
+def EndScreen(start_game):
     ES = pygame.image.load("data/ScreenshotPull.png")
-    CR = pygame.image.load("data/MiniMenu.png")
+    scale_task = pygame.transform.scale(
+        ES, (ES.get_width() * 3,
+               ES.get_height() * 3))
+    window_rect = ES.get_rect(center=(400, 200))
     while True:
-        SCREEN.blit(ES, (0, 0))
-        SCREEN.blit(CR, (120, 120))
+        SCREEN.blit(scale_task, window_rect)
         END_SCREEN_MOUSE_POS = pygame.mouse.get_pos()
-        END_SCREEN_TEXT = get_font(100).render("CONGRATULATIONS", True, "#ffe521")
-        END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
-        SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
-        QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 450),
-                             text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
-        END_SCREEN_CONT = Button(image=None, pos=(640, 630),
-                                 text_input="CONT", font=get_font(75), base_color="White", hovering_color="Green")
-        END_SCREEN_CONT.changeColor(END_SCREEN_MOUSE_POS)
-        END_SCREEN_CONT.update(SCREEN)
-        for button in [END_SCREEN_CONT, QUIT_BUTTON]:
-            button.changeColor(END_SCREEN_MOUSE_POS)
-            button.update(SCREEN)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if END_SCREEN_CONT.checkForInput(END_SCREEN_MOUSE_POS):
-                    start_game()
-                    sys.exit()
-        pygame.display.update()
-
-
-def EndScreen():
-    ES = pygame.image.load("data/ScreenshotPull.png")
-    while True:
-        SCREEN.blit(ES, (0, 0))
-        END_SCREEN_MOUSE_POS = pygame.mouse.get_pos()
-        END_SCREEN_TEXT = get_font(100).render("CONGRATULATIONS", True, "#ffe521")
+        END_SCREEN_TEXT = get_font(80).render("CONGRATULATIONS", True, "#ffe521")
         END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
         SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
         QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 450),
@@ -110,12 +95,14 @@ def EndScreen():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if END_SCREEN_CONT.checkForInput(END_SCREEN_MOUSE_POS):
-                    Play()
+                    Play(start_game)
                     sys.exit()
-        pygame.display.update()
+                if QUIT_BUTTON.checkForInput(END_SCREEN_MOUSE_POS):
+                    quit()
+            pygame.display.update()
 
 
-def Resume():
+def Resume(start_game):
     RM = pygame.image.load("data/Resume.png")
     while True:
         SCREEN.blit(RM, (0, 0))
@@ -207,11 +194,12 @@ def Resume():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if RESUME_BACK.checkForInput(RESUME_MOUSE_POS):
-                    Setting()
+                    Setting(start_game)
         pygame.display.update()
 
 
-def Play():     # start_game()
+def Play(start_game):     # start_game()
+    global level_order
     LV = pygame.image.load("data/LevelsBG.png")
     LP = pygame.image.load("data/LevelsPlates.png")
     while True:
@@ -246,17 +234,20 @@ def Play():     # start_game()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if PLAY_BACK.checkForInput(PLAY_MOUSE_POS):
-                    Main_menu()
+                    Main_menu(start_game)
                 if GO1_BUTTON.checkForInput(PLAY_MOUSE_POS):
-                    Levels()
+                    level_order = 1
+                    Levels(start_game, 1)
                 if GO2_BUTTON.checkForInput(PLAY_MOUSE_POS):
-                    Levels()
+                    level_order = 2
+                    Levels(start_game, 2)
                 if GO3_BUTTON.checkForInput(PLAY_MOUSE_POS):
-                    Levels()
+                    level_order = 3
+                    Levels(start_game, 3)
         pygame.display.update()
 
 
-def Setting():
+def Setting(start_game):
     ST = pygame.image.load("data/Settings-screen.png")
     while True:
         SCREEN.blit(ST, (0, 0))
@@ -283,9 +274,9 @@ def Setting():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if SETTINGS_BACK.checkForInput(SETTINGS_MOUSE_POS):
-                    Main_menu()
+                    Main_menu(start_game)
                 if RESUME_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
-                    Resume()
+                    Resume(start_game)
                 if LANGUAGE_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
                     LanSWITCH()
                 if MUSIC_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
@@ -293,7 +284,8 @@ def Setting():
         pygame.display.update()
 
 
-def Main_menu():
+def Main_menu(start_game):
+    global pause, level_order
     while True:
         SCREEN.blit(BG, (0, 0))
         MENU_MOUSE_POS = pygame.mouse.get_pos()
@@ -315,14 +307,16 @@ def Main_menu():
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):
-                    Play()
-                    sys.exit()
+                    if pause:
+                        start_game(screen_size, level_order)
+                        sys.exit()
+                    else:
+                        Play(start_game)
+                        sys.exit()
                 if SETTINGS_BUTTON.checkForInput(MENU_MOUSE_POS):
-                    Setting()
+                    Setting(start_game)
                 if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):
                     pygame.quit()
                     sys.exit()
         pygame.display.update()
 
-
-Main_menu()
