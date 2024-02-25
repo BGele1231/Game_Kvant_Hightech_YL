@@ -231,28 +231,30 @@ class Garbage(Tools):
 class Mailbox(Tools):
     def __init__(self, image, dedicated_image, size, pos, product, access_sides, redundant_height=0, name=""):
         super().__init__(image, dedicated_image, size, pos, 0, {'': product}, access_sides, name, redundant_height)
-        global level_order
-        print(level_order)
         self.stuff_in = {}
         self.stuff_need = {}
+
+    def making(self):
+        global level_order
+        print(level_order)
         # Подключение к БД
         con = sqlite3.connect("data/db")
         # Создание курсора
         cur = con.cursor()
         # Выполнение запроса и получение всех результатов
         result = cur.execute("""SELECT stuff FROM level_stuff
-                    WHERE level = ?""", (level_order,)).fetchall()
+                            WHERE level = ?""", (level_order,)).fetchall()
         for el in result[0][0].split(";"):
             self.stuff_need[el.split(",")[0]] = int(el.split(",")[1])
-
-    def making(self):
         if hero.active_inventory and hero.inventory1 != '':
             invent = hero.inventory1
             hero.inventory1 = ""
             if invent in self.stuff_in:
-                self.stuff_in[invent] += 1
+                a = [(invent, self.stuff_in[invent] + 1)]
+                self.stuff_in.update(a)
             else:
-                self.stuff_in[invent] = 1
+                a = [(invent, 1)]
+                self.stuff_in.update(a)
             for i in self.stuff_need:
                 if i in self.stuff_in:
                     if self.stuff_need[i] > self.stuff_in[i]:
@@ -281,6 +283,7 @@ class Mailbox(Tools):
 
     def take(self):
         global level_order
+        print(level_order)
         task = pygame.image.load(f'data/level_{level_order}.png')
         scale_task = pygame.transform.scale(
             task, (task.get_width(),
