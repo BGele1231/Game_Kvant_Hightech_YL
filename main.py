@@ -201,6 +201,7 @@ class Storage(Tools):
         if hero.active_inventory and hero.inventory1 == '':
             product = self.recipes.get(hero.inventory1)
             hero.inventory1 = product[hero.inventory1]
+            print(product, product[hero.inventory1])
             product = ""
             return False
         elif not hero.active_inventory and hero.inventory2 == '':
@@ -550,8 +551,8 @@ if __name__ == "__main__":
                     , "top right", 85, "garbage_1")
     soldering = Tools(load_image('soldering.png'), load_image('soldering_dedicated.png'), (140, 235),
                       (8, 480), 5, {'': ''}, "right", "soldering_1")
-    sandpaper = Tools(load_image('sandpaper.png'), load_image('sandpaper_dedicated.png'), (130, 180),
-                      (21, 280), 5, {'sandpaper': '', '': 'sandpaper'}, "right top", "sandpaper_1", 33)
+    sandpaper = Storage(load_image('sandpaper.png'), load_image('sandpaper_dedicated.png'), (130, 180),
+                      (21, 280), {'sandpaperr': '', '': 'sandpaperr'}, "right top", 33, "sandpaper_1")
     painting = Tools(load_image('painting.png'), load_image('painting_dedicated.png'), (220, 220),
                      (30, 0), 5, {'3D stuff': "Painted 3d stuff", "Keychain": "Painted keychain"}, "bottom", "painting_1")
     trotec = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),

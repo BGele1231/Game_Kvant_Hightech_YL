@@ -286,6 +286,8 @@ def Setting(start_game):
 
 def Main_menu(start_game):
     global pause, level_order
+    animation_set = [pygame.image.load(f"data/Animation/{i}.png") for i in range(0, 4)]
+    i = 1
     while True:
         SCREEN.blit(BG, (0, 0))
         MENU_MOUSE_POS = pygame.mouse.get_pos()
@@ -298,6 +300,10 @@ def Main_menu(start_game):
         QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 550),
                              text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
         SCREEN.blit(MENU_TEXT, MENU_RECT)
+        SCREEN.blit(animation_set[i // 13], (100, 600))
+        i += 1
+        if i == 50:
+            i = 1
         for button in [PLAY_BUTTON, SETTINGS_BUTTON, QUIT_BUTTON]:
             button.changeColor(MENU_MOUSE_POS)
             button.update(SCREEN)
