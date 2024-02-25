@@ -1,17 +1,19 @@
 import pygame
 import sys
-
+import sqlite3
 
 pygame.init()
 SCREEN = pygame.display.set_mode((1280, 720))
 pygame.display.set_caption("Menu")
 BG = pygame.image.load("data/Background.png")  # Add menu screen
-
+pause = False
 screen_size = (1280, 720)
 screen = pygame.display.set_mode(screen_size)
-
-level_order = {'smth': ''}
-
+sound_menu = pygame.mixer.Sound("data/spokoinaia_muzyka_dlia_fona_bez_slov_chill_F75.mp3")
+sound_menu.play()
+sound_game = pygame.mixer.Sound("data/spokoinaia_muzyka_dlia_fona_bez_slov_chill_vEO.mp3")
+level_order = 1
+flag = True
 
 class Button:
     def __init__(self, image, pos, text_input, font, base_color, hovering_color):
@@ -46,18 +48,22 @@ class Button:
             self.text = self.font.render(self.text_input, True, self.base_color)
 
 
-def Levels(start_game):
-    global level_order
-    level_order = {'smth': ''}
-    start_game(screen_size)
+def Levels(start_game, level):
+    start_game(screen_size, level)
 
 
 def get_font(size):
     return pygame.font.Font("data/font.ttf", size)  # Add font
 
 
-def Music():
-    pass
+def Music(self):
+    global flag
+    if self:
+        sound_menu.play()
+        sound_game.play()
+    else:
+        sound_menu.stop()
+        sound_game.stop()
 
 
 def LanSWITCH():
@@ -65,41 +71,22 @@ def LanSWITCH():
 
 
 def PauseMenu(start_game):
-    ES = pygame.image.load("data/ScreenshotPull.png")
-    CR = pygame.image.load("data/MiniMenu.png")
-    while True:
-        SCREEN.blit(ES, (0, 0))
-        SCREEN.blit(CR, (120, 120))
-        END_SCREEN_MOUSE_POS = pygame.mouse.get_pos()
-        END_SCREEN_TEXT = get_font(100).render("CONGRATULATIONS", True, "#ffe521")
-        END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
-        SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
-        QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 450),
-                             text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
-        END_SCREEN_CONT = Button(image=None, pos=(640, 630),
-                                 text_input="CONT", font=get_font(75), base_color="White", hovering_color="Green")
-        END_SCREEN_CONT.changeColor(END_SCREEN_MOUSE_POS)
-        END_SCREEN_CONT.update(SCREEN)
-        for button in [END_SCREEN_CONT, QUIT_BUTTON]:
-            button.changeColor(END_SCREEN_MOUSE_POS)
-            button.update(SCREEN)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if END_SCREEN_CONT.checkForInput(END_SCREEN_MOUSE_POS):
-                    start_game(screen_size)
-                    sys.exit()
-        pygame.display.update()
+    global pause
+    pause = True
+    Main_menu(start_game)
+    sound_menu.play()
 
 
 def EndScreen(start_game):
     ES = pygame.image.load("data/ScreenshotPull.png")
+    scale_task = pygame.transform.scale(
+        ES, (ES.get_width() * 3,
+               ES.get_height() * 3))
+    window_rect = ES.get_rect(center=(400, 200))
     while True:
-        SCREEN.blit(ES, (0, 0))
+        SCREEN.blit(scale_task, window_rect)
         END_SCREEN_MOUSE_POS = pygame.mouse.get_pos()
-        END_SCREEN_TEXT = get_font(100).render("CONGRATULATIONS", True, "#ffe521")
+        END_SCREEN_TEXT = get_font(80).render("CONGRATULATIONS", True, "#ffe521")
         END_SCREEN_RECT = END_SCREEN_TEXT.get_rect(center=(640, 110))
         SCREEN.blit(END_SCREEN_TEXT, END_SCREEN_RECT)
         QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 450),
@@ -119,6 +106,8 @@ def EndScreen(start_game):
                 if END_SCREEN_CONT.checkForInput(END_SCREEN_MOUSE_POS):
                     Play(start_game)
                     sys.exit()
+                if QUIT_BUTTON.checkForInput(END_SCREEN_MOUSE_POS):
+                    quit()
             pygame.display.update()
 
 
@@ -219,9 +208,22 @@ def Resume(start_game):
 
 
 def Play(start_game):     # start_game()
+    global level_order
+    Music(not flag)
+    sound_game.play()
     LV = pygame.image.load("data/LevelsBG.png")
     LP = pygame.image.load("data/LevelsPlates.png")
     while True:
+        con = sqlite3.connect("data/db")
+        # Создание курсора
+        cur = con.cursor()
+        # Выполнение запроса и получение всех результатов
+        result = cur.execute("""SELECT time FROM level_score""").fetchall()
+        level_score1 = str(result[0][0]) if result[0][0] != 0 else '-'
+        level_score2 = str(result[1][0]) if result[1][0] != 0 else '-'
+        level_score3 = str(result[2][0]) if result[2][0] != 0 else '-'
+        TIME = get_font(15).render('The best speed:', True, "White")
+
         SCREEN.blit(LV, (0, 0))
         SCREEN.blit(LP, (70, 35))
         SCREEN.blit(LP, (490, 35))
@@ -229,13 +231,33 @@ def Play(start_game):     # start_game()
         PLAY_MOUSE_POS = pygame.mouse.get_pos()
         LEVEL1_TEXT = get_font(30).render("Level 1", True, "White")
         LEVEL1_RECT = LEVEL1_TEXT.get_rect(center=(220, 120))
+        TIME1 = get_font(22).render(level_score1, True, "White")
+        RECT1 = LEVEL1_TEXT.get_rect(center=(220, 170))
+        RECT1T = LEVEL1_TEXT.get_rect(center=(310, 200))
+        SCREEN.blit(TIME, RECT1)
+        SCREEN.blit(TIME1, RECT1T)
         SCREEN.blit(LEVEL1_TEXT, LEVEL1_RECT)
+
         LEVEL2_TEXT = get_font(30).render("Level 2", True, "White")
         LEVEL2_RECT = LEVEL2_TEXT.get_rect(center=(640, 120))
+        TIME2 = get_font(22).render(level_score2, True, "White")
+        RECT2 = LEVEL2_TEXT.get_rect(center=(640, 170))
+        RECT2T = LEVEL2_TEXT.get_rect(center=(730, 200))
+        SCREEN.blit(TIME, RECT2)
+        SCREEN.blit(TIME2, RECT2T)
         SCREEN.blit(LEVEL2_TEXT, LEVEL2_RECT)
+
         LEVEL3_TEXT = get_font(30).render("Level 3", True, "White")
         LEVEL3_RECT = LEVEL3_TEXT.get_rect(center=(1060, 120))
+        TIME3 = get_font(22).render(level_score3, True, "White")
+        RECT3 = LEVEL3_TEXT.get_rect(center=(1060, 170))
+        RECT3T = LEVEL3_TEXT.get_rect(center=(1150, 200))
+        SCREEN.blit(TIME, RECT3)
+        SCREEN.blit(TIME3, RECT3T)
         SCREEN.blit(LEVEL3_TEXT, LEVEL3_RECT)
+
+
+
         GO1_BUTTON = Button(image=None, pos=(220, 500),
                             text_input="GO", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
         GO2_BUTTON = Button(image=None, pos=(640, 500),
@@ -255,15 +277,21 @@ def Play(start_game):     # start_game()
                 if PLAY_BACK.checkForInput(PLAY_MOUSE_POS):
                     Main_menu(start_game)
                 if GO1_BUTTON.checkForInput(PLAY_MOUSE_POS):
-                    Levels(start_game)
+                    level_order = 1
+                    Levels(start_game, 1)
+                    Music(1)
+                    Music(2)
                 if GO2_BUTTON.checkForInput(PLAY_MOUSE_POS):
-                    Levels(start_game)
+                    level_order = 2
+                    Levels(start_game, 2)
                 if GO3_BUTTON.checkForInput(PLAY_MOUSE_POS):
-                    Levels(start_game)
+                    level_order = 3
+                    Levels(start_game, 3)
         pygame.display.update()
 
 
 def Setting(start_game):
+    global flag
     ST = pygame.image.load("data/Settings-screen.png")
     while True:
         SCREEN.blit(ST, (0, 0))
@@ -296,11 +324,18 @@ def Setting(start_game):
                 if LANGUAGE_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
                     LanSWITCH()
                 if MUSIC_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
-                    Music()
+                    Music(flag)
+            if event.type == pygame.MOUSEBUTTONUP:
+                if MUSIC_BUTTON.checkForInput(SETTINGS_MOUSE_POS):
+                    Music(not flag)
+                    flag = not flag
         pygame.display.update()
 
 
 def Main_menu(start_game):
+    global pause, level_order
+    animation_set = [pygame.image.load(f"data/Animation/{i}.png") for i in range(0, 4)]
+    i = 1
     while True:
         SCREEN.blit(BG, (0, 0))
         MENU_MOUSE_POS = pygame.mouse.get_pos()
@@ -313,6 +348,10 @@ def Main_menu(start_game):
         QUIT_BUTTON = Button(image=pygame.image.load("data/Quit Rect.png"), pos=(640, 550),
                              text_input="QUIT", font=get_font(75), base_color="#d7fcd4", hovering_color="White")
         SCREEN.blit(MENU_TEXT, MENU_RECT)
+        SCREEN.blit(animation_set[i // 13], (100, 600))
+        i += 1
+        if i == 50:
+            i = 1
         for button in [PLAY_BUTTON, SETTINGS_BUTTON, QUIT_BUTTON]:
             button.changeColor(MENU_MOUSE_POS)
             button.update(SCREEN)
@@ -322,8 +361,12 @@ def Main_menu(start_game):
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if PLAY_BUTTON.checkForInput(MENU_MOUSE_POS):
-                    Play(start_game)
-                    sys.exit()
+                    if pause:
+                        start_game(screen_size, level_order)
+                        sys.exit()
+                    else:
+                        Play(start_game)
+                        sys.exit()
                 if SETTINGS_BUTTON.checkForInput(MENU_MOUSE_POS):
                     Setting(start_game)
                 if QUIT_BUTTON.checkForInput(MENU_MOUSE_POS):

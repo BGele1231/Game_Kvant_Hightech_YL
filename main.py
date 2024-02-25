@@ -2,6 +2,7 @@ import threading
 import pygame
 import os
 import sys
+import sqlite3
 import time
 from menu import (Main_menu, Button, get_font, Music, LanSWITCH, Levels, Resume, Play, Setting, level_order,
                   EndScreen, PauseMenu)
@@ -91,7 +92,7 @@ class Tools(Sprite):
         self.rect = pygame.Rect((*pos, *size))
         self.size = size
         self.busy = False  # занят изготовлением или нет
-        self.res = False # Готовое изделие в станке
+        self.res = False  # Готовое изделие в станке
         self.time = time
         self.recipes = recipes  # словарь, ключ - материал, значение - продукт
         self.x = pos[0]
@@ -131,38 +132,57 @@ class Tools(Sprite):
         return
 
     def making(self):
+        if self.name == "soldering_1":
+            message(self.name, "You don't need it")
+            return
         if not self.state:
             message(self.name, "it's broken")
             return "it's broken"
         if not self.busy:
             if not self.busy and not self.res:
-                self.busy = True
-                thread = threading.Thread(target=self.timer)
-                thread.start()
-                if hero.active_inventory and hero.inventory1 in self.recipes.keys():
+                if hero.active_inventory and hero.inventory1 in self.recipes.keys() and hero.inventory1 != "":
+                    self.busy = True
+                    thread = threading.Thread(target=self.timer)
+                    thread.start()
                     self.product = self.recipes[hero.inventory1]
                     hero.inventory1 = ""
+                    message(self.name, "Work has begun")
                     return False
-                elif not hero.active_inventory and hero.inventory2 in self.recipes.keys():
+                elif not hero.active_inventory and hero.inventory2 in self.recipes.keys() and hero.inventory2 != "":
+                    self.busy = True
+                    thread = threading.Thread(target=self.timer)
+                    thread.start()
                     self.product = self.recipes[hero.inventory2]
                     hero.inventory2 = ""
+                    message(self.name, "Work has begun")
                     return False
                     # отсчёт времени до self.time
                 # изменить после таймера self.busy
                 self.image = self.second_image
-                print('Making')
-                message(self.name, "Work has begun")
-                return "I can't take more/I am shorthanded"  # доделать ВЫВОД НА ЭКРАН, что нет свободного места
+                return "I can't take more/I am shorthanded"
             elif not self.busy and self.res:
                 if hero.active_inventory and hero.inventory1 == "":
                     hero.inventory1 = self.product
+                    self.product = ""
                     self.res = False
                 elif not hero.active_inventory and hero.inventory2 == "":
                     hero.inventory2 = self.product
+                    self.product = ""
                     self.res = False
         else:
             message(self.name, "it works")
             return "it works"
+
+    def take(self):
+        if self.name in "flsun wanhao_1 hercules_1":
+            if hero.active_inventory and hero.inventory1 == '':
+                hero.inventory1 = "PLA"
+                message(self.name, "You took PLA")
+                return False
+            elif not hero.active_inventory and hero.inventory2 == '':
+                hero.inventory2 = "PLA"
+                message(self.name, "You took PLA")
+                return False
 
     def fixing(self, time):
         if self.access:
@@ -172,20 +192,126 @@ class Tools(Sprite):
 
 
 class Storage(Tools):
-    def __init__(self, image, dedicated_image, size, pos, product, access_sides, redundant_height=0, name=""):
+    def __init__(self, image, dedicated_image, size, pos, product, access_sides, name="", redundant_height=0):
         super().__init__(image, dedicated_image, size, pos, 0, {'': product}, access_sides, name, redundant_height)
 
     def making(self):
         # где-то тут выбор точного материала
         if hero.active_inventory and hero.inventory1 == '':
             product = self.recipes.get(hero.inventory1)
-            hero.inventory1 = product
+            hero.inventory1 = product[hero.inventory1]
+            product = ""
             return False
         elif not hero.active_inventory and hero.inventory2 == '':
             product = self.recipes.get(hero.inventory2)
-            hero.inventory2 = product
+            hero.inventory2 = product[hero.inventory2]
+            product = ""
+            return False
+        return "I can't take more/I am shorthanded"
+
+
+class Garbage(Tools):
+    def __init__(self, image, dedicated_image, size, pos, product, access_sides, name="", redundant_height=0):
+        super().__init__(image, dedicated_image, size, pos, 0, {'': product}, access_sides, name, redundant_height)
+
+    def making(self):
+        # где-то тут выбор точного материала
+        if hero.active_inventory and hero.inventory1 != '':
+            hero.inventory1 = ""
+            message(self.name, "What a waste...(((")
+            return False
+        elif not hero.active_inventory and hero.inventory2 != '':
+            hero.inventory2 = ""
+            message(self.name, "What a waste...(((")
             return False
         return "I can't take more/I am shorthanded"  # доделать ВЫВОД НА ЭКРАН, что нет свободного места
+
+
+class Mailbox(Tools):
+    def __init__(self, image, dedicated_image, size, pos, product, access_sides, redundant_height=0, name=""):
+        super().__init__(image, dedicated_image, size, pos, 0, {'': product}, access_sides, name, redundant_height)
+        self.stuff_in = {}
+        self.stuff_need = {}
+        # Подключение к БД
+        self.con = sqlite3.connect("data/db")
+        # Создание курсора
+        self.cur = self.con.cursor()
+
+    def making(self):
+        global level_order
+        print(level_order)
+        # Выполнение запроса и получение всех результатов
+        result = self.cur.execute("""SELECT stuff FROM level_stuff
+                            WHERE level = ?""", (level_order,)).fetchall()
+        for el in result[0][0].split(";"):
+            self.stuff_need[el.split(",")[0]] = int(el.split(",")[1])
+
+        if hero.active_inventory and hero.inventory1 != '':
+            invent = hero.inventory1
+            hero.inventory1 = ""
+            if invent in self.stuff_in:
+                a = [(invent, self.stuff_in[invent] + 1)]
+                self.stuff_in.update(a)
+            else:
+                a = [(invent, 1)]
+                self.stuff_in.update(a)
+            for i in self.stuff_need:
+                if i in self.stuff_in:
+                    if self.stuff_need[i] > self.stuff_in[i]:
+                        return
+                else:
+                    return
+            print("Fin")
+            write_new_time()
+            EndScreen(start_game)
+            return
+        elif not hero.active_inventory and hero.inventory2 != '':
+            invent = hero.inventory2
+            hero.inventory2 = ""
+            if invent in self.stuff_in:
+                self.stuff_in[invent] += 1
+            else:
+                self.stuff_in[invent] = 1
+            for i in self.stuff_need:
+                if i in self.stuff_in:
+                    if self.stuff_need[i] > self.stuff_in[i]:
+                        return
+                else:
+                    return
+            print("Fin")
+            EndScreen(start_game)
+            write_new_time()
+            return
+
+    def take(self):
+        global level_order
+        task = pygame.image.load(f'data/level_{level_order}.png')
+        scale_task = pygame.transform.scale(
+            task, (task.get_width(),
+                   task.get_height()))
+        window_rect = scale_task.get_rect(center=(640, 360))
+        screen.blit(scale_task, window_rect)
+        pygame.display.update()
+        a = True
+        while a:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                    a = False
+
+
+def write_new_time():
+    time = pygame.time.get_ticks()
+    con = sqlite3.connect("data/db")
+    cur = con.cursor()
+    result = cur.execute(f"""SELECT time FROM level_score WHERE level={level_order}""").fetchone()
+    print(result)
+    if time - level_t < result[0] or result[0] == 0:
+        pass
+        new_time = f"""UPDATE level_score SET time={time - level_t} WHERE level={level_order}"""
+        con.cursor().execute(new_time)
+        con.commit()
 
 
 class Player(Sprite):
@@ -214,7 +340,7 @@ class Player(Sprite):
             if (((x > i.x + i.size[0] or i.x > x + self.rect.size[0]) or
                  ((y > i.y + i.size[1] - OVERLAP) or (i.y + i.redundant_height > y + self.rect.size[1]))) and
                     0 <= x <= screen_size[0] - self.rect.size[0] and
-                    0 <= y <= screen_size[1] - self.rect.size[1]):
+                    55 <= y <= screen_size[1] - self.rect.size[1]):
                 # hero.top_bottom = False
                 flag = True
             else:
@@ -233,7 +359,8 @@ class Player(Sprite):
                 i.access = True
                 i.image = i.second_image
             else:
-                i.image = i.first_image
+                if not i.busy:
+                    i.image = i.first_image
                 i.access = False
 
 
@@ -267,13 +394,23 @@ def up_down_left_right(movement, n):
 
 def move(hero, movement, shift):
     if shift:
-        up_down_left_right(movement, 6)
+        up_down_left_right(movement, 8)
     else:
-        up_down_left_right(movement, 4)
+        up_down_left_right(movement, 5)
+
+
+def choosing_stuff():
+    # print(access_tools)
+    # for j in access_tools:
+    if len(access_tools) != 0:
+        k = access_tools[0].take()
+        if k:
+            pass
+            # доделать ВЫВОД НА ЭКРАН, k будет сообщением
 
 
 def choosing_tools():
-    print(access_tools)
+    # print(access_tools)
     # for j in access_tools:
     if len(access_tools) != 0:
         k = access_tools[0].making()
@@ -309,7 +446,10 @@ def message(name, message):
     return
 
 
-def start_game(screen_size):
+def start_game(screen_size, level):
+    global level_order, level_t
+    level_t = pygame.time.get_ticks()
+    level_order = level
     running = True
     while running:
         for event in pygame.event.get():
@@ -342,13 +482,15 @@ def start_game(screen_size):
             move(hero, "right", shift)
         if keys[pygame.K_f]:
             choosing_tools()
+        if keys[pygame.K_e]:
+            choosing_stuff()
         if keys[pygame.K_1]:
             hero.active_inventory = True
         elif keys[pygame.K_2]:
             hero.active_inventory = False
 
         if keys[pygame.K_TAB]:
-            EndScreen(start_game)
+            print(hero.inventory1, hero.inventory2)
 
         if keys[pygame.K_ESCAPE]:
             PauseMenu(start_game)
@@ -372,7 +514,6 @@ def start_game(screen_size):
 
         # hero_group.draw(screen)
         # pygame.draw.rect(screen, (255, 255, 255), hero.access_rect)
-        # pygame.draw.rect(screen, (44, 44, 44), flsun.access_rect)
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
@@ -415,33 +556,35 @@ if __name__ == "__main__":
     sprite_group = SpriteGroup()
     tools_group = SpriteGroup()
     flsun = Tools(load_image('test.png'), load_image('flsun_dedicated.png'), (190, 160),
-                  (333, 558), 2, {'PLA': '3D stuff'}, "top left","flsun", 55)
+                  (333, 558), 10, {'PLA': '3D stuff'}, "top left","flsun", 55)
     wanhao = Tools(load_image('wanhao.png'), load_image('wanhao_dedicated.png'), (190, 160),
-                   (530, 558), 2, {'PLA': '3D stuff'}, "top", "wanhao_1", 55)
+                   (530, 558), 14, {'PLA': '3D stuff'}, "top", "wanhao_1", 55)
     her = Tools(load_image('her.png'), load_image('her_dedicated.png'), (200, 190),
-                (725, 529), 2, {'PLA': '3D stuff'}, "top", "hercules_1", 80)
-    garbage = Tools(load_image('garbage.png'), load_image('garbage_dedicated.png'), (130, 170),
-                    (935, 539), 2, {'PLA': '', 'Plywood': '', 'Keychain': '', 'Painted keychain': '', 'Plywood section': '', '3D stuff': '', 'sandpaper': '', 'Painted 3d stuff': ''}
-                    , "top right", "garbage_1", 85)
+                (725, 529), 8, {'PLA': '3D stuff'}, "top", "hercules_1", 80)
+    garbage = Garbage(load_image('garbage.png'), load_image('garbage_dedicated.png'), (130, 170),
+                    (935, 539), 1, "top right", "garbage_1", 85)
     soldering = Tools(load_image('soldering.png'), load_image('soldering_dedicated.png'), (140, 235),
-                      (8, 480), 2, {'': ''}, "right", "soldering_1")
-    sandpaper = Tools(load_image('sandpaper.png'), load_image('sandpaper_dedicated.png'), (130, 180),
-                      (21, 280), 2, {'sandpaper': '', '': 'sandpaper'}, "right top", "sandpaper_1", 33)
+                      (8, 480), 1, {'': ''}, "right", "soldering_1")
+    sandpaper = Storage(load_image('sandpaper.png'), load_image('sandpaper_dedicated.png'), (130, 180),
+                      (21, 280), {'sandpaperr': '', '': 'sandpaperr'}, "right top", "sandpaper_1", 33)
     painting = Tools(load_image('painting.png'), load_image('painting_dedicated.png'), (220, 220),
-                     (30, 0), 2, {'3D stuff': "Painted 3d stuff", "Keychain": "Painted keychain"}, "bottom", "painting_1")
+                     (30, 0), 17, {'3D stuff': "Painted 3d stuff", "Keychain": "Painted keychain"},
+                     "bottom", "painting_1")
     trotec = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
-                   (270, 50), 2, {'Plywood section': 'Keychain'}, "bottom", "trotec_1")
+                   (270, 50), 10, {'Plywood section': 'Keychain'}, "bottom", "trotec")
     trotec_2 = Tools(load_image('trotec.png'), load_image('trotec_dedicated.png'), (230, 170),
-                     (520, 50), 2, {'Plywood section': 'Keychain'}, "bottom", "trotec_1")
+                     (520, 50), 10, {'Plywood section': 'Keychain'}, "bottom", "trotec_1")
     buld = Tools(load_image('buld.png'), load_image('buld_dedicated.png'), (290, 190),
-                 (935, 60), 2, {'Plywood': 'Plywood section'}, "bottom", "buld_1")
+                 (935, 60), 9, {'Plywood': 'Plywood section'}, "bottom", "buld_1")
     workbench = Tools(load_image('workbench.png'), load_image('workbench_dedicated.png'), (472, 232),
-                      (350, 300), 1, {'smth': 'good_smth'}, "top bottom left right", "workbench_1")
+                      (350, 300), 7, {'smth': 'good_smth'}, "top bottom left right", "workbench_1", 55)
     rack = Storage(load_image('rack.png'), load_image('rack_dedicated.png'), (100, 180), (1160, 200),
-                   {'': 'Plywood'}, "left bottom", 55, "rack_1")
+                   {'': 'Plywood'}, "left bottom", "rack_1", 55)
+    mailbox = Mailbox(load_image('mailbox.png'), load_image('mailbox_dedicated.png'), (89, 297), (1180, 420),
+                   {'': 'Plywood'}, "left bottom", 55, "mail")
 
     middle_coordinates = (workbench.y + workbench.size[1]) // 2
-    staffs = [workbench, flsun, wanhao, her, garbage, soldering, sandpaper, trotec, trotec_2, buld, rack, painting]
+    staffs = [workbench, flsun, wanhao, her, garbage, soldering, sandpaper, trotec, trotec_2, buld, rack, painting, mailbox]
     workbench_group = SpriteGroup()
     workbench_group.add(workbench)
 
@@ -450,6 +593,7 @@ if __name__ == "__main__":
     bottom_tools.add(wanhao)
     bottom_tools.add(her)
     bottom_tools.add(garbage)
+    bottom_tools.add(mailbox)
 
     top_tools = SpriteGroup()
     top_tools.add(painting)
